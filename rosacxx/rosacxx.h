@@ -3,8 +3,8 @@
 
 #include <stdio.h>
 
-namespace librosa {
+namespace rosacxx {
 
-} // namespace librosa
+} // namespace rosacxx
 
 #endif // ROSACXX_H

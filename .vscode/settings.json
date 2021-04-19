@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "vamp_kiss_fft.c": "cpp",
+        "*.bk": "cpp",
+        "iostream": "cpp"
+    }
+}

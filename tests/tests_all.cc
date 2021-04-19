@@ -1,9 +1,11 @@
-#include "tests_all.h"
-
 #include <iostream>
 
 namespace rosa {
 namespace tests {
+
+// declare test functions here ...
+void tests_fft();
+void tests_chroma_cqt();
 
 void tests_all() {
 
@@ -13,7 +15,7 @@ void tests_all() {
 } // namespace rosa
 
 int main() {
-    std::cout << "[LibRosaCXX][Test] Start. " << std::endl;
+    std::cout << "[LibRosaCXX][Tests] Start. " << std::endl;
     rosa::tests::tests_all();
-    std::cout << "[LibRosaCXX][Test] End. " << std::endl;
+    std::cout << "[LibRosaCXX][Tests] End. " << std::endl;
 }

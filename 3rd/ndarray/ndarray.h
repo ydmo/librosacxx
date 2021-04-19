@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <cstring>
 
-namespace rosacxx {
+namespace ndarr {
 
 inline size_t alignUp(const size_t& __size, const size_t& __align) {
     const size_t alignment_mask = __align - 1;

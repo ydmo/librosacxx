@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+#include <util/ndarray.h>
+
 namespace rosacxx {
 namespace core {
 

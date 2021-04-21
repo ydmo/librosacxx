@@ -13,7 +13,9 @@ set(
     # Thrid-Parties ----------------------------------------------
 
     ## N-Dimension Array Library like numpy.
-    ${CMAKE_CURRENT_LIST_DIR}/3rd/ndarray/ndarray.h
+    ${CMAKE_CURRENT_LIST_DIR}/3rd/numcxx/numcxx.h
+    ${CMAKE_CURRENT_LIST_DIR}/3rd/numcxx/alignmalloc.h
+    ${CMAKE_CURRENT_LIST_DIR}/3rd/numcxx/ndarray.h
 
     ## FFT Libraries.
     ${CMAKE_CURRENT_LIST_DIR}/3rd/fft/fft.h
@@ -31,6 +33,10 @@ set(
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/filters.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/constantq.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/constantq.cc
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/convert.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/convert.cc
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/pitch.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/pitch.cc
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/feature/spectral.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/feature/spectral.cc
 
@@ -41,16 +47,19 @@ set_target_properties(rosacxx PROPERTIES OUTPUT_NAME "rosacxx")
 set_target_properties(rosacxx PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 
 if (BUILD_ROSACXX_TESTS)
+    add_compile_options(-std=c++11)
+    add_compile_options(-pthread)
+    find_package(GTest REQUIRED)
     add_executable(
-        rosacxx-tests
+        rosacxx_tests
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_all.cc
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_chroma_cqt.cc
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_fft.cc
+        ${CMAKE_CURRENT_LIST_DIR}/tests/tests_numcxx.cc
         )
-    target_link_libraries(rosacxx-tests PUBLIC rosacxx)
-    find_package(GTest REQUIRED)
-#    target_link_libraries(rosacxx-tests PUBLIC ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
-    target_link_libraries(rosacxx-tests PUBLIC ${GTEST_BOTH_LIBRARIES})
+    target_link_libraries(rosacxx_tests PUBLIC rosacxx)
+    set(GTEST_LIBRARIES gtest gtest_main pthread)
+    target_link_libraries(rosacxx_tests PUBLIC ${GTEST_LIBRARIES})
 endif()
 
 if (BUILD_ROSACXX_FFT_WITH_SINGLE_PRECISION)

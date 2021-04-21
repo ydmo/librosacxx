@@ -6,9 +6,11 @@ namespace tests {
 // declare test functions here ...
 void tests_fft();
 void tests_chroma_cqt();
+void tests_numcxx();
 
 void tests_all() {
-
+    tests_fft();
+    tests_numcxx();
 }
 
 } // namespace tests

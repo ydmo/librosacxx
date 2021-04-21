@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include <3rd/ndarray/ndarray.h>
+#include <3rd/numcxx/numcxx.h>
 
 namespace rosacxx {
 namespace core {
@@ -29,8 +29,8 @@ namespace core {
 /// ----------
 /// Returns                 | Type          | Note
 /// @result CQT             | NDArrayF32Ptr | Constant-Q value each frequency at each time.
-ndarr::NDArrayF32Ptr cqt(
-        const ndarr::NDArrayF32Ptr& y = nullptr,
+nc::NDArrayF32Ptr cqt(
+        const nc::NDArrayF32Ptr& y = nullptr,
         const float sr = 22050,
         const int hop_length = 512,
         const float fmin = 0,
@@ -68,8 +68,8 @@ ndarr::NDArrayF32Ptr cqt(
 /// ----------
 /// Returns                 | Type          | Note
 /// @result CQT             | NDArrayF32Ptr | Constant-Q value each frequency at each time.
-ndarr::NDArrayF32Ptr hybrid_cqt(
-        const ndarr::NDArrayF32Ptr& y = nullptr,
+nc::NDArrayF32Ptr hybrid_cqt(
+        const nc::NDArrayF32Ptr& y = nullptr,
         const float sr = 22050,
         const int hop_length = 512,
         const float fmin = 0,

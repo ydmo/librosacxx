@@ -1,71 +1,14 @@
 #ifndef ROSACXX_UTIL_ARRAY_H
 #define ROSACXX_UTIL_ARRAY_H
 
-#include <stdio.h>
-#include <vector>
-#include <memory>
-#include <stdexcept>
-#include <cstring>
+#include "alignmalloc.h"
 
-namespace ndarr {
-
-inline size_t alignUp(const size_t& __size, const size_t& __align) {
-    const size_t alignment_mask = __align - 1;
-    return ((__size + alignment_mask) & (~alignment_mask));
-}
-
-inline void * alignedMalloc(size_t __alignment, size_t __size) {
-#   ifdef _WIN32
-    return _alignedMalloc(__alignment, alignUp(__size, __alignment));
-#   else
-    void *p = NULL;
-    if (__alignment) {
-        int ret = posix_memalign(&p, __alignment, alignUp(__size, __alignment));
-        if(ret) { //  failed.
-            throw std::runtime_error("posix_memalign failed.");
-            return NULL;
-        }
-    } else {
-        p = malloc(__size);
-    }
-    return p;
-#   endif
-}
-
-inline void * alignedCalloc(size_t __alignment, size_t __size) {
-#   ifdef _WIN32
-    size_t alignedSize = alignUp(__size, __alignment);
-    void * ptr = _alignedMalloc(__alignment, alignedSize);
-    memset(ptr, 0x00, alignedSize);
-    return ptr;
-#   else
-    void *p = NULL;
-    if (__alignment) {
-        size_t alignedSize = alignUp(__size, __alignment);
-        int ret = posix_memalign(&p, __alignment, alignedSize);
-        memset(p, 0x00, alignedSize);
-        if(ret) { //  failed.
-            throw std::runtime_error("posix_memalign failed.");
-            return NULL;
-        }
-    } else {
-        p = calloc(__size, 1);
-    }
-    return p;
-#   endif
-}
-
-inline void alignedFree(void * __p) {
-#   ifdef _WIN32
-    _aligned_free(__p);
-#   else
-    free(__p);
-#   endif
-}
+namespace nc {
 
 template<typename DType>
 class NDArray {
 public:
+
     ~NDArray() {
         _shape.clear();
         if (_data) {
@@ -94,7 +37,7 @@ public:
         }
     }
 
-    inline size_t elemCount() const {
+    size_t elemCount() const {
         size_t elemCnt = 1;
         for (const int& s : _shape) {
            elemCnt *= s;
@@ -102,7 +45,7 @@ public:
         return elemCnt;
     }
 
-    inline size_t bytesCount() const {
+    size_t bytesCount() const {
         return this->elemCount() * sizeof (DType);
     }
 
@@ -112,15 +55,29 @@ public:
         return sptr_clone;
     }
 
-    inline std::vector<int> shape() const {
+    std::vector<int> shape() const {
         return _shape;
     }
 
-    inline DType * data() const {
+    DType * data() const {
         return  _data;
     }
 
-    inline std::shared_ptr<NDArray> dot(const std::shared_ptr<NDArray>& other) {
+    DType loc(const std::vector<int>& location) const {
+        std::vector<size_t> stride(_shape.size());
+        size_t s = 1;
+        for (int k = int(stride.size() - 1); k >= 0; k--) {
+            stride[k] = s;
+            s *= _shape[k];
+        }
+        size_t flattenIndex = 0;
+        for (auto k = 0; k < _shape.size(); k++) {
+            flattenIndex += location[k] * stride[k];
+        }
+        return _data[flattenIndex];
+    }
+
+    std::shared_ptr<NDArray> dot(const std::shared_ptr<NDArray>& other) const {
         if (this->_shape.size() == 1 && other->_shape.size() == 1) {
             if (this->_shape[0] != this->_shape[0]) {
                 throw std::runtime_error("invalid shape");
@@ -140,6 +97,14 @@ public:
         }
     }
 
+public: // static methods ...
+
+    static std::shared_ptr<NDArray> FromVec1D(const std::vector<DType>& __vec) {
+        auto p = std::shared_ptr<NDArray<DType>>(new NDArray<DType>({int(__vec.size())}));
+        memcpy(p->_data, __vec.data(), __vec.size() * sizeof (DType));
+        return p;
+    }
+
 private:
     std::vector<int> _shape;
     DType *          _data;
@@ -151,6 +116,6 @@ typedef NDArray<int>   NDArrayS32;
 typedef std::shared_ptr<NDArrayF32> NDArrayF32Ptr;
 typedef std::shared_ptr<NDArrayS32> NDArrayS32Ptr;
 
-} // namespace rosacxx
+} // namespace nc
 
 #endif

@@ -6,7 +6,7 @@
 #include <cfloat>
 #include <cmath>
 
-#include <3rd/ndarray/ndarray.h>
+#include <3rd/numcxx/numcxx.h>
 #include <rosacxx/core/constantq.h>
 #include <rosacxx/filters.h>
 
@@ -32,10 +32,10 @@ namespace feature {
 /// @param cqt_mode         | char *        | Constant-Q transform mode ['full', 'hybrid']
 /// ----------
 /// @result chromagram      | NDArrayF32Ptr | The output chromagram, shape=(n_chroma, t)
-ndarr::NDArrayF32Ptr chroma_cqt(
-        const ndarr::NDArrayF32Ptr& i_y,
+inline nc::NDArrayF32Ptr chroma_cqt(
+        const nc::NDArrayF32Ptr& i_y,
         const float&                i_sr =                22050,
-        const ndarr::NDArrayF32Ptr& i_C =                 nullptr,
+        const nc::NDArrayF32Ptr& i_C =                 nullptr,
         const int&                  i_hop_length =        512,
         const float&                i_fmin =              0,
         const int&                  i_norm =              0,
@@ -43,7 +43,7 @@ ndarr::NDArrayF32Ptr chroma_cqt(
         const float&                i_tuning =            0,
         const int&                  i_n_chroma =          12,
         const int&                  i_n_octaves =         7,
-        const ndarr::NDArrayF32Ptr& i_window =            nullptr,
+        const nc::NDArrayF32Ptr& i_window =            nullptr,
         const int&                  i_bins_per_octave =   36,
         const char *                i_cqt_mode =          "full"
         ) {
@@ -65,7 +65,7 @@ ndarr::NDArrayF32Ptr chroma_cqt(
     }
 
     // Build the CQT if we don't have one already
-    ndarr::NDArrayF32Ptr C = nullptr;
+    nc::NDArrayF32Ptr C = nullptr;
     if (i_C == NULL) {
         if (strcmp("full", i_cqt_mode) == 0) {
             C = nullptr;
@@ -78,7 +78,7 @@ ndarr::NDArrayF32Ptr chroma_cqt(
         }
     }
 
-    ndarr::NDArrayF32Ptr cq_to_chr = filters::cq_to_chroma<float>(
+    nc::NDArrayF32Ptr cq_to_chr = filters::cq_to_chroma<float>(
         C->shape()[0],
         i_bins_per_octave,
         i_n_chroma,
@@ -86,7 +86,7 @@ ndarr::NDArrayF32Ptr chroma_cqt(
         i_window
         );
 
-    ndarr::NDArrayF32Ptr chroma = cq_to_chr->dot(C);
+    nc::NDArrayF32Ptr chroma = cq_to_chr->dot(C);
 
     if (i_threshold != -FLT_MAX) {
         // chroma[chroma < threshold] = 0.0;

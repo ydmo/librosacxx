@@ -12,7 +12,7 @@ protected:
 };
 
 TEST_F(FFTTest, Case0) {
-
+    EXPECT_EQ(1, 1);
 }
 
 namespace rosa {

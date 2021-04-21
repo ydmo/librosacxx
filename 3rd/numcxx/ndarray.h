@@ -21,25 +21,25 @@ public:
         _data = NULL;
     }
 
-    NDArray(const std::vector<int>& i_shape, const DType& val = 0) : _shape(i_shape) {
+    NDArray(const std::vector<int>& __shape, const DType& __val = 0) : _shape(__shape) {
         int elemCnt = 1;
-        for (const int& s : i_shape) {
+        for (const int& s : __shape) {
            elemCnt *= s;
         }
-        if (val == 0) {
+        if (__val == 0) {
             _data = (DType *)alignedCalloc(32, elemCnt * sizeof (DType));
         }
         else {
             _data = (DType *)alignedMalloc(32, elemCnt * sizeof (DType));
             for (int n = 0; n < elemCnt; n++) {
-                _data[n] = val;
+                _data[n] = __val;
             }
         }
-        _strides.resize(i_shape.size());
+        _strides.resize(__shape.size());
         int tmp = 1;
         for (int i = _strides.size() - 1; i >= 0; i--) {
             _strides[i] = tmp;
-            tmp *= i_shape[i];
+            tmp *= __shape[i];
         }
     }
 
@@ -81,17 +81,17 @@ public:
         return *_data;
     }
 
-    DType * at(const std::vector<int>& s) const {
-        if (_shape.size() >= s.size()) throw std::runtime_error("Location error: _shape.size() != s.size()");
+    DType * at(const std::vector<int>& __coor) const {
+        if (_shape.size() >= __coor.size()) throw std::runtime_error("Location error: _shape.size() != s.size()");
         size_t location = 0;
-        for (auto i = 0; i < s.size(); i++) {
-            location += s[i] * _strides[i];
+        for (auto i = 0; i < __coor.size(); i++) {
+            location += __coor[i] * _strides[i];
         }
         return _data + location;
     }
 
-    DType * at(const int& s0) const {
-        return _data + (s0);
+    DType * at(const int& s) const {
+        return _data + (s);
     }
 
     DType * at(const int& s0, const int& s1) const {
@@ -139,11 +139,11 @@ public:
         return _data + (s0 * _strides[0] + s1 * _strides[1] + s2 * _strides[2] + s3 * _strides[3] + s4 * _strides[4] + s5 * _strides[5] + s6 * _strides[6] + s7 * _strides[7] + s8 * _strides[8] + s9);
     }
 
-    DType& getitem(const std::vector<int>& s) const {
-        if (_shape.size() != s.size()) throw std::runtime_error("Location error: _shape.size() != s.size()");
+    DType& getitem(const std::vector<int>& __loc) const {
+        if (_shape.size() != __loc.size()) throw std::runtime_error("Location error: _shape.size() != s.size()");
         size_t location = 0;
-        for (auto i = 0; i < s.size(); i++) {
-            location += s[i] * _strides[i];
+        for (auto i = 0; i < __loc.size(); i++) {
+            location += __loc[i] * _strides[i];
         }
         return _data[location];
     }
@@ -197,19 +197,19 @@ public:
         return _data[s0 * _strides[0] + s1 * _strides[1] + s2 * _strides[2] + s3 * _strides[3] + s4 * _strides[4] + s5 * _strides[5] + s6 * _strides[6] + s7 * _strides[7] + s8 * _strides[8] + s9];
     }
 
-    std::shared_ptr<NDArray> dot(const std::shared_ptr<NDArray>& other) const {
-        if (this->_shape.size() == 1 && other->_shape.size() == 1) {
+    std::shared_ptr<NDArray> dot(const std::shared_ptr<NDArray>& __other) const {
+        if (this->_shape.size() == 1 && __other->_shape.size() == 1) {
             if (this->_shape[0] != this->_shape[0]) {
                 throw std::runtime_error("invalid shape");
             }
             DType sum = 0;
             for (auto i = 0; i < this->_shape[0]; i++) {
-                sum += (this->_data[i] * other->_data[i]);
+                sum += (this->_data[i] * __other->_data[i]);
             }
             auto ptr = std::shared_ptr<NDArray>(new NDArray({1}, sum));
             return ptr;
         }
-        else if (this->_shape.size() == 2 && other->_shape.size() == 2) {
+        else if (this->_shape.size() == 2 && __other->_shape.size() == 2) {
 
         }
         else {
@@ -257,10 +257,10 @@ public:
         return max_idx;
     }
 
-    std::shared_ptr<NDArray<int>> argmax(int axis) const {
+    std::shared_ptr<NDArray<int>> argmax(int __axis) const {
         std::vector<int> shape_am;
         for (int i = 0; i < _shape.size(); i++) {
-            if (i == axis) continue;
+            if (i == __axis) continue;
             shape_am.push_back(i);
         }
 
@@ -274,15 +274,15 @@ public:
             for(int d = 0; d < _shape.size(); d++) {
                 coor[d] = remainder / _strides[d];
                 remainder -= (coor[d] * _strides[d]);
-                if (d == axis) {
+                if (d == __axis) {
                     continue;
                 }
             }
 
             DType curr_val = _data[i];
-            int   curr_idx = coor[axis];
+            int   curr_idx = coor[__axis];
 
-            std::vector<int> am_coor = coor; am_coor.erase(am_coor.begin()+axis);
+            std::vector<int> am_coor = coor; am_coor.erase(am_coor.begin()+__axis);
 
             if (arr_max_val->getitem(am_coor) < curr_val) {
                 arr_max_val->getitem(am_coor) = curr_val;
@@ -293,10 +293,10 @@ public:
         return arr_max_idx;
     }
 
-    std::shared_ptr<NDArray<int>> argmin(int axis) const {
+    std::shared_ptr<NDArray<int>> argmin(int __axis) const {
         std::vector<int> shape_am;
         for (int i = 0; i < _shape.size(); i++) {
-            if (i == axis) continue;
+            if (i == __axis) continue;
             shape_am.push_back(i);
         }
 
@@ -310,15 +310,15 @@ public:
             for(int d = 0; d < _shape.size(); d++) {
                 coor[d] = remainder / _strides[d];
                 remainder -= (coor[d] * _strides[d]);
-                if (d == axis) {
+                if (d == __axis) {
                     continue;
                 }
             }
 
             DType curr_val = _data[i];
-            int   curr_idx = coor[axis];
+            int   curr_idx = coor[__axis];
 
-            std::vector<int> am_coor = coor; am_coor.erase(am_coor.begin()+axis);
+            std::vector<int> am_coor = coor; am_coor.erase(am_coor.begin()+__axis);
 
             if (arr_min_val->getitem(am_coor) > curr_val) {
                 arr_min_val->getitem(am_coor) = curr_val;
@@ -327,6 +327,22 @@ public:
         }
 
         return arr_min_idx;
+    }
+
+    void iadd(const DType& __other) const {
+        for (auto i = 0; i < elemCount(); i++) {
+            _data[i] += __other;
+        }
+    }
+
+    template<typename RDType>
+    std::shared_ptr<NDArray<RDType>> add(const RDType& __other) const {
+        std::shared_ptr<NDArray<RDType>> res = std::shared_ptr<NDArray<RDType>>(new NDArray<RDType>(_shape));
+        RDType * ptr_res = res->data();
+        for (auto i = 0; i < elemCount(); i++) {
+            ptr_res[i] = _data[i] + __other;
+        }
+        return res;
     }
 
 public: // static methods ...

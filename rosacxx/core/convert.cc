@@ -14,8 +14,8 @@ int note_to_midi(const char * note) {
     return iter->second;
 }
 
-float midi_to_hz(const int& midi) {
-    return float(440.0 * std::pow(2.0, ((midi - 69.0) / 12.0)));
+float midi_to_hz(const float& midi) {
+    return float(440.0 * std::pow(2.0, ((double(midi) - 69.0) / 12.0)));
 }
 
 float note_to_hz(const char * note) {
@@ -35,6 +35,26 @@ nc::NDArrayF32Ptr hz_to_octs(const nc::NDArrayF32Ptr& freq, const float& tuning,
         ptr_octs[i] = hz_to_octs(ptr_freq[i], tuning, bins_per_octave);
     }
     return octs;
+}
+
+nc::NDArrayF32Ptr midi_to_hz(const nc::NDArrayF32Ptr& midi) {
+    float *ptr_midi = midi->data();
+    auto hz = std::make_shared<nc::NDArray<float>>(midi->shape());
+    float *ptr_hz = hz->data();
+    for (auto i = 0; i < hz->elemCount(); i++) {
+        ptr_hz[i] = midi_to_hz(ptr_midi[i]);
+    }
+    return hz;
+}
+
+nc::NDArrayF32Ptr midi_to_hz(const nc::NDArrayS32Ptr& midi) {
+    int *ptr_midi = midi->data();
+    auto hz = std::make_shared<nc::NDArray<float>>(midi->shape());
+    float *ptr_hz = hz->data();
+    for (auto i = 0; i < hz->elemCount(); i++) {
+        ptr_hz[i] = midi_to_hz(ptr_midi[i]);
+    }
+    return hz;
 }
 
 } // namespace core

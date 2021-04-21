@@ -53,9 +53,9 @@ if (BUILD_ROSACXX_TESTS)
     add_executable(
         rosacxx_tests
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_all.cc
-        ${CMAKE_CURRENT_LIST_DIR}/tests/tests_chroma_cqt.cc
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_fft.cc
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_numcxx.cc
+        ${CMAKE_CURRENT_LIST_DIR}/tests/tests_rosa_core.cc
         )
     target_link_libraries(rosacxx_tests PUBLIC rosacxx)
     set(GTEST_LIBRARIES gtest gtest_main pthread)

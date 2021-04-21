@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <cstring>
 #include <sstream>
+#include <cmath>
 
 namespace nc {
 

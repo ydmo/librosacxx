@@ -67,11 +67,10 @@ float pitch_tuning(
 
     //    counts, tuning = np.histogram(residual, bins)
     auto counts = nc::histogram(residual, bins);
-    auto ptr_counts = counts->data();
 
     //    # return the histogram peak
     //    return tuning[np.argmax(counts)]
-    return ptr_counts[nc::argmax(counts)];
+    return counts->getitem(nc::argmax(counts)->scalar());
 }
 
 } // namespace core

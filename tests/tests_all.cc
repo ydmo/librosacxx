@@ -9,7 +9,7 @@ void tests_chroma_cqt();
 void tests_numcxx();
 
 void tests_all() {
-    tests_fft();
+    // tests_fft();
     tests_numcxx();
 }
 

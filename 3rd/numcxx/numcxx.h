@@ -14,22 +14,30 @@ inline std::ostream &operator << (std::ostream &__os, const std::shared_ptr<NDAr
     __os << DTypeName;
     __os << ">( ";
     if (__arr->shape().size() == 1) { // is 1D array.
+        __os << __arr->shape()[0] << " ) = ";
         __os << "[ ";
         for (auto i = 0; i < __arr->elemCount(); i++) {
             __os << ptr[i] << ", ";
         }
         __os << "]";
     }
+    else if (__arr->shape().size() == 2) { // is 2D array.
+        __os << __arr->shape()[0] << ", " << __arr->shape()[1] << " ) = ";
+        __os << "[ " << std::endl;
+        for (auto s0 = 0; s0 < __arr->shape()[0]; s0++) {
+            __os << "\t[ ";
+            for (auto s1 = 0; s1 < __arr->shape()[1]; s1++) {
+                __os << ptr[s0 * __arr->shape()[1] + s1] << ", ";
+            }
+            __os << "], " << std::endl;
+        }
+        __os << "\t]";
+    }
     else {
         throw std::runtime_error("Not Implemented.");
     }
-    __os << " )" << std::endl;
+    __os << std::endl;
     return __os;
-}
-
-template<typename DType>
-inline std::shared_ptr<NDArray<DType>> scalar(const DType& val) {
-    return std::shared_ptr<NDArray<DType>>(new NDArray<DType>({1}, val));
 }
 
 template<typename DType>
@@ -70,21 +78,32 @@ inline std::shared_ptr<NDArray<int>> histogram(const std::shared_ptr<NDArray<DTy
 }
 
 template<typename DType>
-int argmax(const std::shared_ptr<NDArray<DType>>& a, int axis = -1) {
+std::shared_ptr<NDArray<DType>> arange(DType __x) {
+    int cx = int(std::ceil(__x));
+    std::vector<DType> vec;
+    for (int i = 0; i < cx; i++) {
+        vec.push_back(DType(i));
+    }
+    return NDArray<DType>::FromVec1D(vec);
+}
+
+template<typename DType>
+std::shared_ptr<NDArray<int>> argmax(const std::shared_ptr<NDArray<DType>>& a, int axis = -1) {
     if (axis >= 0) {
-        throw std::runtime_error("Not implemented.");
+        return a->argmax(axis);
     }
     else {
-        auto ptr_a = a->data();
-        int max_idx = 0;
-        DType max_a = ptr_a[0];
-        for (auto i = 0; i < a->elemCount(); i++) {
-            if (ptr_a[i] > max_a) {
-                max_a = ptr_a[i];
-                max_idx = i;
-            }
-        }
-        return max_idx;
+        return NDArray<int>::FromScalar(a->argmax());
+    }
+}
+
+template<typename DType>
+std::shared_ptr<NDArray<int>> argmin(const std::shared_ptr<NDArray<DType>>& a, int axis = -1) {
+    if (axis >= 0) {
+        return a->argmin(axis);
+    }
+    else {
+        return NDArray<int>::FromScalar(a->argmin());
     }
 }
 

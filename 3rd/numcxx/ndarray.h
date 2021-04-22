@@ -2,13 +2,13 @@
 #define ROSACXX_UTIL_ARRAY_H
 
 #include "alignmalloc.h"
+#include <half.h>
 
 namespace nc {
 
 template<typename DType>
 class NDArray {
 public:
-
     ~NDArray() {
         _shape.clear();
         if (_data) {
@@ -197,6 +197,24 @@ public:
         return _data[s0 * _strides[0] + s1 * _strides[1] + s2 * _strides[2] + s3 * _strides[3] + s4 * _strides[4] + s5 * _strides[5] + s6 * _strides[6] + s7 * _strides[7] + s8 * _strides[8] + s9];
     }
 
+    std::shared_ptr<NDArray> getitems(const std::shared_ptr<NDArray<bool>>& __mask) const {
+        if (__mask->shape().size() > _shape.size()) throw std::runtime_error("Invaild input mask");
+        std::vector<DType> vec_res(0);
+        if (__mask->shape().size() == _shape.size()) {
+            for (auto i = 0; i < __mask->elemCount(); i++) {
+                if (__mask->at(i)) vec_res.push_back(_data[i]);
+            }
+            if (vec_res.size() == 0) return nullptr;
+            auto p = std::shared_ptr<NDArray<DType>>(new NDArray<DType>({int(vec_res.size())}));
+            memcpy(p->_data, vec_res.data(), vec_res.size() * sizeof (DType));
+            return p;
+        }
+        else {
+            throw std::runtime_error("Not implemented.");
+        }
+        return nullptr;
+    }
+
     std::shared_ptr<NDArray> dot(const std::shared_ptr<NDArray>& __other) const {
         if (this->_shape.size() == 1 && __other->_shape.size() == 1) {
             if (this->_shape[0] != this->_shape[0]) {
@@ -335,14 +353,27 @@ public:
         }
     }
 
-    template<typename RDType>
-    std::shared_ptr<NDArray<RDType>> add(const RDType& __other) const {
-        std::shared_ptr<NDArray<RDType>> res = std::shared_ptr<NDArray<RDType>>(new NDArray<RDType>(_shape));
-        RDType * ptr_res = res->data();
+    std::shared_ptr<NDArray<DType>> add(const DType& __other) const {
+        std::shared_ptr<NDArray<DType>> res = std::shared_ptr<NDArray<DType>>(new NDArray<DType>(_shape));
+        DType * ptr_res = res->data();
         for (auto i = 0; i < elemCount(); i++) {
             ptr_res[i] = _data[i] + __other;
         }
         return res;
+    }
+
+    std::shared_ptr<NDArray<DType>> add(const std::shared_ptr<NDArray<DType>>& __other) const {
+        if (__other->shape() == _shape) {
+            std::shared_ptr<NDArray<DType>> res = std::shared_ptr<NDArray<DType>>(new NDArray<DType>(_shape));
+            DType * ptr_res   = res->data();
+            DType * ptr_other = __other->data();
+            for (auto i = 0; i < elemCount(); i++) {
+                ptr_res[i] = _data[i] + ptr_other[i];
+            }
+            return res;
+        }
+        throw std::runtime_error("Broadcast operator was not implemented.");
+        return nullptr;
     }
 
 public: // static methods ...
@@ -399,13 +430,25 @@ private:
     std::vector<int> _strides;
     std::vector<int> _shape;
     DType *          _data;
+
+public: // typedef
+    typedef std::shared_ptr<NDArray> Ptr;
+    typedef std::vector<Ptr>         PtrVec;
 };
 
-typedef NDArray<float> NDArrayF32;
-typedef NDArray<int>   NDArrayS32;
+#ifdef HALF_HALF_HPP
+typedef NDArray<half_float::half>   NDArrayF16;
+#endif // HALF_HALF_HPP
 
-typedef std::shared_ptr<NDArrayF32> NDArrayF32Ptr;
-typedef std::shared_ptr<NDArrayS32> NDArrayS32Ptr;
+typedef NDArray<float>              NDArrayF32;
+typedef NDArray<double>             NDArrayF64;
+typedef NDArray<char>               NDArrayS8;
+typedef NDArray<short>              NDArrayS16;
+typedef NDArray<int>                NDArrayS32;
+typedef NDArray<unsigned char>      NDArrayU8;
+typedef NDArray<unsigned short>     NDArrayU16;
+typedef NDArray<unsigned int>       NDArrayU32;
+typedef NDArray<bool>               NDArrayBool;
 
 } // namespace nc
 

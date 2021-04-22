@@ -25,7 +25,7 @@ inline std::shared_ptr<nc::NDArray<DType>> cq_to_chroma(
         const int& bins_per_octave =            12,
         const int& n_chroma =                   12,
         const float& fmin =                     0,
-        const nc::NDArrayF32Ptr& window =    nullptr,
+        const nc::NDArrayF32::Ptr& window =    nullptr,
         const bool& base_c =                    true
         ) {
     throw std::runtime_error("Not implemented error");

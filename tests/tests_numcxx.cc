@@ -42,6 +42,19 @@ TEST_F(NCTest, FromVec2D) {
     }
 }
 
+TEST_F(NCTest, Add) {
+    {
+        std::vector<std::vector<float>> vec2d = {{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f}};
+        auto arr0 = nc::NDArray<float>::FromVec2D(vec2d);
+        auto arr1 = arr0 + 1.f;
+        for (auto i = 0; i < vec2d.size(); i++) {
+            for (auto j = 0; j < vec2d[0].size(); j++) {
+                EXPECT_NEAR(arr1->getitem(i, j), vec2d[i][j] + 1.f, 1e-6);
+            }
+        }
+    }
+}
+
 TEST_F(NCTest, linspace) {
     auto arr0 = nc::linspace(-0.5f, 0.5f, 101);
     std::vector<float> gt0 = {-0.5 , -0.49, -0.48, -0.47, -0.46, -0.45, -0.44, -0.43, -0.42,

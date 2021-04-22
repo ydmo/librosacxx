@@ -107,6 +107,83 @@ std::shared_ptr<NDArray<int>> argmin(const std::shared_ptr<NDArray<DType>>& a, i
     }
 }
 
+template<typename DType>
+DType median(const std::shared_ptr<NDArray<DType>>& __arr) {
+    DType sum = 0;
+    for (int i = 0; i < __arr->elemCount(); i++) {
+        sum += __arr->getitem(i);
+    }
+    return sum / __arr->elemCount();
+}
+
+template<typename DType>
+std::shared_ptr<NDArray<DType>> operator + (const std::shared_ptr<NDArray<DType>>& lhs, const DType& rhs) {
+    return lhs->add(rhs);
+}
+
+template<typename DType, typename RType>
+NDArrayBool::Ptr operator < (const std::shared_ptr<NDArray<DType>>& lhs, const RType& rhs) {
+    NDArrayBool::Ptr ret = NDArrayBool::Ptr(new NDArrayBool(lhs->shape()));
+    bool * ptr_ret = ret->data();
+    for (auto i = 0; i < ret->elemCount(); i++) {
+        if (lhs->getitem(i) < rhs) ptr_ret[i] = true;
+    }
+    return ret;
+}
+
+template<typename DType, typename RType>
+NDArrayBool::Ptr operator <= (const std::shared_ptr<NDArray<DType>>& lhs, const RType& rhs) {
+    NDArrayBool::Ptr ret = NDArrayBool::Ptr(new NDArrayBool(lhs->shape()));
+    bool * ptr_ret = ret->data();
+    for (auto i = 0; i < ret->elemCount(); i++) {
+        if (lhs->getitem(i) <= rhs) ptr_ret[i] = true;
+    }
+    return ret;
+}
+
+template<typename DType, typename RType>
+NDArrayBool::Ptr operator > (const std::shared_ptr<NDArray<DType>>& lhs, const RType& rhs) {
+    NDArrayBool::Ptr ret = NDArrayBool::Ptr(new NDArrayBool(lhs->shape()));
+    bool * ptr_ret = ret->data();
+    for (auto i = 0; i < ret->elemCount(); i++) {
+        if (lhs->getitem(i) > rhs) ptr_ret[i] = true;
+    }
+    return ret;
+}
+
+template<typename DType, typename RType>
+NDArrayBool::Ptr operator >= (const std::shared_ptr<NDArray<DType>>& lhs, const RType& rhs) {
+    NDArrayBool::Ptr ret = NDArrayBool::Ptr(new NDArrayBool(lhs->shape()));
+    bool * ptr_ret = ret->data();
+    for (auto i = 0; i < ret->elemCount(); i++) {
+        if (lhs->getitem(i) >= rhs) ptr_ret[i] = true;
+    }
+    return ret;
+}
+
+template<typename DType>
+std::shared_ptr<NDArray<DType>> operator & (const std::shared_ptr<NDArray<DType>>& __lhs, const std::shared_ptr<NDArray<DType>>& __rhs) {
+    if (__lhs->shape() != __rhs->shape()) throw std::runtime_error("Invaild input params");
+    NDArrayBool::Ptr ret = NDArrayBool::Ptr(new NDArrayBool(__lhs->shape()));
+    DType * ptr_ret = ret->data();
+    DType * ptr_lhs = __lhs->data();
+    DType * ptr_rhs = __rhs->data();
+    for (auto i = 0; i < ret->elemCount(); i++) {
+        ptr_ret[i] = (ptr_lhs[i] & ptr_rhs[i]);
+    }
+}
+
+NDArrayBool::Ptr operator && (const NDArrayBool::Ptr& __lhs, const NDArrayBool::Ptr& __rhs) {
+    if (__lhs->shape() != __rhs->shape()) throw std::runtime_error("Invaild input params");
+    NDArrayBool::Ptr ret = NDArrayBool::Ptr(new NDArrayBool(__lhs->shape()));
+    bool * ptr_ret = ret->data();
+    bool * ptr_lhs = __lhs->data();
+    bool * ptr_rhs = __rhs->data();
+    for (auto i = 0; i < ret->elemCount(); i++) {
+        ptr_ret[i] = (ptr_lhs[i] && ptr_rhs[i]);
+    }
+}
+
 }
 
 #endif // NUMCXX_H

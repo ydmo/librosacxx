@@ -6,6 +6,7 @@ option(BUILD_ROSACXX_TESTS                      "Build librosacxx test."        
 option(BUILD_ROSACXX_FFT_WITH_SINGLE_PRECISION  "Build librosacxx fft libraries using single precision(32bit-float)."   ON)
 
 include_directories( ${CMAKE_CURRENT_LIST_DIR} )
+include_directories( ${CMAKE_CURRENT_LIST_DIR}/../half/include/half )
 
 set(
     ROSACXX_SRCS

@@ -9,7 +9,7 @@ std::shared_ptr<NDArray<DType>> cq_to_chroma(
         const int& bins_per_octave,
         const int& n_chroma,
         const float& fmin,
-        const NDArrayF32Ptr& window,
+        const NDArrayF32::Ptr& window,
         const bool& base_c
         ) {
 

@@ -14,11 +14,11 @@ float note_to_hz(const char * note);
 
 float hz_to_octs(const float& freq, const float& tuning=0.0, const int& bins_per_octave=12);
 
-nc::NDArrayF32::Ptr hz_to_octs(const nc::NDArrayF32::Ptr& freq, const float& tuning=0.0, const int& bins_per_octave=12);
+nc::NDArrayF32Ptr hz_to_octs(const nc::NDArrayF32Ptr& freq, const float& tuning=0.0, const int& bins_per_octave=12);
 
-nc::NDArrayF32::Ptr midi_to_hz(const nc::NDArrayF32::Ptr& midi);
+nc::NDArrayF32Ptr midi_to_hz(const nc::NDArrayF32Ptr& midi);
 
-nc::NDArrayF32::Ptr midi_to_hz(const nc::NDArrayS32::Ptr& midi);
+nc::NDArrayF32Ptr midi_to_hz(const nc::NDArrayS32Ptr& midi);
 
 } // namespace core
 } // namespace rosacxx

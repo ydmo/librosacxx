@@ -11,7 +11,7 @@ namespace core {
 /// Function: cqt
 /// ----------
 /// Parameters              | Type          | Note
-/// @param y                | NDArrayF32::Ptr | audio time series, shape = (n)
+/// @param y                | NDArrayF32Ptr | audio time series, shape = (n)
 /// @param sr               | float         | sampling rate of ``y``
 /// @param hop_length       | int           | number of samples between successive CQT columns.
 /// @param fmin             | float         | Minimum frequency. Defaults to `C1 ~= 32.70 Hz`
@@ -29,8 +29,8 @@ namespace core {
 /// ----------
 /// Returns                 | Type          | Note
 /// @result CQT             | NDArrayF32::Ptr | Constant-Q value each frequency at each time.
-nc::NDArrayF32::Ptr cqt(
-        const nc::NDArrayF32::Ptr& y = nullptr,
+nc::NDArrayF32Ptr cqt(
+        const nc::NDArrayF32Ptr& y = nullptr,
         const float sr = 22050,
         const int hop_length = 512,
         const float fmin = 0,
@@ -50,7 +50,7 @@ nc::NDArrayF32::Ptr cqt(
 /// Function: hybrid_cqt
 /// ----------
 /// Parameters              | Type          | Note
-/// @param y                | NDArrayF32::Ptr | audio time series, shape = (n)
+/// @param y                | NDArrayF32Ptr | audio time series, shape = (n)
 /// @param sr               | float         | sampling rate of ``y``
 /// @param hop_length       | int           | number of samples between successive CQT columns.
 /// @param fmin             | float         | Minimum frequency. Defaults to `C1 ~= 32.70 Hz`
@@ -68,8 +68,8 @@ nc::NDArrayF32::Ptr cqt(
 /// ----------
 /// Returns                 | Type          | Note
 /// @result CQT             | NDArrayF32::Ptr | Constant-Q value each frequency at each time.
-nc::NDArrayF32::Ptr hybrid_cqt(
-        const nc::NDArrayF32::Ptr& y = nullptr,
+nc::NDArrayF32Ptr hybrid_cqt(
+        const nc::NDArrayF32Ptr& y = nullptr,
         const float sr = 22050,
         const int hop_length = 512,
         const float fmin = 0,

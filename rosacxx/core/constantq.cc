@@ -7,8 +7,8 @@
 namespace rosacxx {
 namespace core {
 
-nc::NDArrayF32::Ptr vqt(
-        const nc::NDArrayF32::Ptr& i_y,
+nc::NDArrayF32Ptr vqt(
+        const nc::NDArrayF32Ptr& i_y,
         const float i_sr,
         const int hop_length,
         const float i_fmin,
@@ -29,7 +29,7 @@ nc::NDArrayF32::Ptr vqt(
     int n_octaves = int(std::ceil(float(n_bins) / bins_per_octave));
     int n_filters = std::min(bins_per_octave, n_bins);
 
-    int len_orig = i_y->shape()[0];
+    int len_orig = i_y.shape()[0];
     float alpha = std::pow(2.0, (1.0 / bins_per_octave)) - 1;
 
     float fmin = i_fmin;
@@ -46,8 +46,8 @@ nc::NDArrayF32::Ptr vqt(
     return nullptr;
 }
 
-nc::NDArrayF32::Ptr cqt(
-        const nc::NDArrayF32::Ptr& y,
+nc::NDArrayF32Ptr cqt(
+        const nc::NDArrayF32Ptr& y,
         const float sr,
         const int hop_length,
         const float fmin,

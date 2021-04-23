@@ -38,6 +38,8 @@ set(
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/convert.cc
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/pitch.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/pitch.cc
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/spectrum.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/spectrum.cc
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/feature/spectral.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/feature/spectral.cc
 
@@ -56,7 +58,7 @@ if (BUILD_ROSACXX_TESTS)
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_all.cc
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_fft.cc
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_numcxx.cc
-        ${CMAKE_CURRENT_LIST_DIR}/tests/tests_rosa_core.cc
+        ${CMAKE_CURRENT_LIST_DIR}/tests/tests_rosacxx.cc
         )
     target_link_libraries(rosacxx_tests PUBLIC rosacxx)
     set(GTEST_LIBRARIES gtest gtest_main pthread)

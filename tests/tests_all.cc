@@ -6,11 +6,11 @@ namespace tests {
 
 // declare test functions here ...
 void tests_numcxx();
-void tests_rosa_core();
+void tests_rosacxx();
 
 void tests_all() {
     tests_numcxx();
-    tests_rosa_core();
+    tests_rosacxx();
 }
 
 } // namespace tests

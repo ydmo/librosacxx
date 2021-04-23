@@ -27,31 +27,31 @@ float hz_to_octs(const float& freq, const float& tuning, const int& bins_per_oct
     return std::log2(freq / (A440 / 16));
 }
 
-nc::NDArrayF32::Ptr hz_to_octs(const nc::NDArrayF32::Ptr& freq, const float& tuning, const int& bins_per_octave) {
-    auto octs = std::make_shared<nc::NDArray<float>>(freq->shape());
-    float *ptr_freq = freq->data();
-    float *ptr_octs = octs->data();
-    for (auto i = 0; i < freq->elemCount(); i++) {
+nc::NDArrayF32Ptr hz_to_octs(const nc::NDArrayF32Ptr& freq, const float& tuning, const int& bins_per_octave) {
+    auto octs = nc::NDArrayF32Ptr(new nc::NDArrayF32(freq.shape()));
+    float *ptr_freq = freq.data();
+    float *ptr_octs = octs.data();
+    for (auto i = 0; i < freq.elemCount(); i++) {
         ptr_octs[i] = hz_to_octs(ptr_freq[i], tuning, bins_per_octave);
     }
     return octs;
 }
 
-nc::NDArrayF32::Ptr midi_to_hz(const nc::NDArrayF32::Ptr& midi) {
-    float *ptr_midi = midi->data();
-    auto hz = std::make_shared<nc::NDArray<float>>(midi->shape());
-    float *ptr_hz = hz->data();
-    for (auto i = 0; i < hz->elemCount(); i++) {
+nc::NDArrayF32Ptr midi_to_hz(const nc::NDArrayF32Ptr& midi) {
+    float *ptr_midi = midi.data();
+    auto hz = nc::NDArrayF32Ptr(new nc::NDArrayF32(midi.shape()));
+    float *ptr_hz = hz.data();
+    for (auto i = 0; i < hz.elemCount(); i++) {
         ptr_hz[i] = midi_to_hz(ptr_midi[i]);
     }
     return hz;
 }
 
-nc::NDArrayF32::Ptr midi_to_hz(const nc::NDArrayS32::Ptr& midi) {
-    int *ptr_midi = midi->data();
-    auto hz = std::make_shared<nc::NDArray<float>>(midi->shape());
-    float *ptr_hz = hz->data();
-    for (auto i = 0; i < hz->elemCount(); i++) {
+nc::NDArrayF32Ptr midi_to_hz(const nc::NDArrayS32Ptr& midi) {
+    int *ptr_midi = midi.data();
+    auto hz = nc::NDArrayF32Ptr(new nc::NDArrayF32(midi.shape()));
+    float *ptr_hz = hz.data();
+    for (auto i = 0; i < hz.elemCount(); i++) {
         ptr_hz[i] = midi_to_hz(ptr_midi[i]);
     }
     return hz;

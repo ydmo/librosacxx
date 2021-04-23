@@ -6,28 +6,28 @@
 namespace nc {
 
 template<typename DType>
-inline std::ostream &operator << (std::ostream &__os, const std::shared_ptr<NDArray<DType>>& __arr) {
-    const DType * ptr = __arr->data();
+inline std::ostream &operator << (std::ostream &__os, const NDArrayPtr<DType>& __arr) {
+    const DType * ptr = __arr.data();
     const char * DTypeName = typeid(ptr[0]).name();
     __os.clear();
     __os << "nc::NDArray<";
     __os << DTypeName;
     __os << ">( ";
-    if (__arr->shape().size() == 1) { // is 1D array.
-        __os << __arr->shape()[0] << " ) = ";
+    if (__arr.shape().size() == 1) { // is 1D array.
+        __os << __arr.shape()[0] << " ) = ";
         __os << "[ ";
-        for (auto i = 0; i < __arr->elemCount(); i++) {
+        for (auto i = 0; i < __arr.elemCount(); i++) {
             __os << ptr[i] << ", ";
         }
         __os << "]";
     }
-    else if (__arr->shape().size() == 2) { // is 2D array.
-        __os << __arr->shape()[0] << ", " << __arr->shape()[1] << " ) = ";
+    else if (__arr.shape().size() == 2) { // is 2D array.
+        __os << __arr.shape()[0] << ", " << __arr.shape()[1] << " ) = ";
         __os << "[ " << std::endl;
-        for (auto s0 = 0; s0 < __arr->shape()[0]; s0++) {
+        for (auto s0 = 0; s0 < __arr.shape()[0]; s0++) {
             __os << "\t[ ";
-            for (auto s1 = 0; s1 < __arr->shape()[1]; s1++) {
-                __os << ptr[s0 * __arr->shape()[1] + s1] << ", ";
+            for (auto s1 = 0; s1 < __arr.shape()[1]; s1++) {
+                __os << ptr[s0 * __arr.shape()[1] + s1] << ", ";
             }
             __os << "], " << std::endl;
         }
@@ -41,9 +41,9 @@ inline std::ostream &operator << (std::ostream &__os, const std::shared_ptr<NDAr
 }
 
 template<typename DType>
-inline std::shared_ptr<NDArray<DType>> linspace(const DType& start, const DType& stop, const size_t& num, const bool& endpoint = true, DType * restep = NULL) {
-    auto res = std::shared_ptr<NDArray<DType>>(new NDArray<DType>({int(num)}));
-    auto ptr_res = res->data();
+inline NDArrayPtr<DType> linspace(const DType& start, const DType& stop, const size_t& num, const bool& endpoint = true, DType * restep = NULL) {
+    auto res = NDArrayPtr<DType>(new NDArray<DType>({int(num)}));
+    auto ptr_res = res.data();
     DType step = 0;
     if (endpoint) {
         step = (stop - start) / (num - 1);
@@ -61,14 +61,14 @@ inline std::shared_ptr<NDArray<DType>> linspace(const DType& start, const DType&
 }
 
 template<typename DType>
-inline std::shared_ptr<NDArray<int>> histogram(const std::shared_ptr<NDArray<DType>>& a, const std::shared_ptr<NDArray<DType>>& bins) {
-    auto ptr_a = a->data();
-    auto ptr_bins = bins->data();
-    std::shared_ptr<NDArray<int>> hist = std::shared_ptr<NDArray<int>>(new NDArray<int>({int(bins->elemCount()-1)}, 0));
-    auto ptr_hist = hist->data();
-    for (auto i = 0; i < a->elemCount(); i++) {
+inline NDArrayS32Ptr histogram(const NDArrayPtr<DType>& a, const NDArrayPtr<DType>& bins) {
+    auto ptr_a = a.data();
+    auto ptr_bins = bins.data();
+    NDArrayS32Ptr hist = NDArrayS32Ptr(new NDArray<int>({int(bins.elemCount()-1)}, 0));
+    auto ptr_hist = hist.data();
+    for (auto i = 0; i < a.elemCount(); i++) {
         auto va = ptr_a[i];
-        for (auto h = 0; h < hist->elemCount(); h++) {
+        for (auto h = 0; h < hist.elemCount(); h++) {
             if (ptr_bins[h] <= va && va < ptr_bins[h+1]) {
                 ptr_hist[h] += 1;
             }
@@ -78,112 +78,66 @@ inline std::shared_ptr<NDArray<int>> histogram(const std::shared_ptr<NDArray<DTy
 }
 
 template<typename DType>
-std::shared_ptr<NDArray<DType>> arange(DType __x) {
+NDArrayPtr<DType> arange(DType __x) {
     int cx = int(std::ceil(__x));
     std::vector<DType> vec;
     for (int i = 0; i < cx; i++) {
         vec.push_back(DType(i));
     }
-    return NDArray<DType>::FromVec1D(vec);
+    return NDArrayPtr<DType>::FromVec1D(vec);
 }
 
 template<typename DType>
-std::shared_ptr<NDArray<int>> argmax(const std::shared_ptr<NDArray<DType>>& a, int axis = -1) {
+NDArrayS32Ptr argmax(const NDArrayPtr<DType>& a, int axis = -1) {
     if (axis >= 0) {
-        return a->argmax(axis);
+        return a.argmax(axis);
     }
     else {
-        return NDArray<int>::FromScalar(a->argmax());
+        return NDArrayS32Ptr::FromScalar(a.argmax());
     }
 }
 
 template<typename DType>
-std::shared_ptr<NDArray<int>> argmin(const std::shared_ptr<NDArray<DType>>& a, int axis = -1) {
+NDArrayS32Ptr argmin(const NDArrayPtr<DType>& a, int axis = -1) {
     if (axis >= 0) {
-        return a->argmin(axis);
+        return a.argmin(axis);
     }
     else {
-        return NDArray<int>::FromScalar(a->argmin());
+        return NDArrayS32Ptr::FromScalar(a.argmin());
     }
 }
 
 template<typename DType>
-DType median(const std::shared_ptr<NDArray<DType>>& __arr) {
+DType median(const NDArrayPtr<DType>& __arr) {
     DType sum = 0;
-    for (int i = 0; i < __arr->elemCount(); i++) {
-        sum += __arr->getitem(i);
+    for (int i = 0; i < __arr.elemCount(); i++) {
+        sum += __arr.getitem(i);
     }
-    return sum / __arr->elemCount();
+    return sum / __arr.elemCount();
 }
 
 template<typename DType>
-std::shared_ptr<NDArray<DType>> operator + (const std::shared_ptr<NDArray<DType>>& lhs, const DType& rhs) {
-    return lhs->add(rhs);
-}
-
-template<typename DType, typename RType>
-NDArrayBool::Ptr operator < (const std::shared_ptr<NDArray<DType>>& lhs, const RType& rhs) {
-    NDArrayBool::Ptr ret = NDArrayBool::Ptr(new NDArrayBool(lhs->shape()));
-    bool * ptr_ret = ret->data();
-    for (auto i = 0; i < ret->elemCount(); i++) {
-        if (lhs->getitem(i) < rhs) ptr_ret[i] = true;
-    }
-    return ret;
-}
-
-template<typename DType, typename RType>
-NDArrayBool::Ptr operator <= (const std::shared_ptr<NDArray<DType>>& lhs, const RType& rhs) {
-    NDArrayBool::Ptr ret = NDArrayBool::Ptr(new NDArrayBool(lhs->shape()));
-    bool * ptr_ret = ret->data();
-    for (auto i = 0; i < ret->elemCount(); i++) {
-        if (lhs->getitem(i) <= rhs) ptr_ret[i] = true;
-    }
-    return ret;
-}
-
-template<typename DType, typename RType>
-NDArrayBool::Ptr operator > (const std::shared_ptr<NDArray<DType>>& lhs, const RType& rhs) {
-    NDArrayBool::Ptr ret = NDArrayBool::Ptr(new NDArrayBool(lhs->shape()));
-    bool * ptr_ret = ret->data();
-    for (auto i = 0; i < ret->elemCount(); i++) {
-        if (lhs->getitem(i) > rhs) ptr_ret[i] = true;
-    }
-    return ret;
-}
-
-template<typename DType, typename RType>
-NDArrayBool::Ptr operator >= (const std::shared_ptr<NDArray<DType>>& lhs, const RType& rhs) {
-    NDArrayBool::Ptr ret = NDArrayBool::Ptr(new NDArrayBool(lhs->shape()));
-    bool * ptr_ret = ret->data();
-    for (auto i = 0; i < ret->elemCount(); i++) {
-        if (lhs->getitem(i) >= rhs) ptr_ret[i] = true;
+NDArrayPtr<DType> abs(const NDArrayPtr<DType>& __arr) {
+    NDArrayPtr<DType> ret = NDArrayPtr<DType>(new NDArray<DType>(__arr.shape()));
+    DType * ptr_ret = ret.data();
+    DType * ptr_src = __arr.data();
+    for (int i = 0; i < __arr.elemCount(); i++) {
+        ptr_ret = std::abs(ptr_src[i]);
     }
     return ret;
 }
 
 template<typename DType>
-std::shared_ptr<NDArray<DType>> operator & (const std::shared_ptr<NDArray<DType>>& __lhs, const std::shared_ptr<NDArray<DType>>& __rhs) {
-    if (__lhs->shape() != __rhs->shape()) throw std::runtime_error("Invaild input params");
-    NDArrayBool::Ptr ret = NDArrayBool::Ptr(new NDArrayBool(__lhs->shape()));
-    DType * ptr_ret = ret->data();
-    DType * ptr_lhs = __lhs->data();
-    DType * ptr_rhs = __rhs->data();
-    for (auto i = 0; i < ret->elemCount(); i++) {
-        ptr_ret[i] = (ptr_lhs[i] & ptr_rhs[i]);
+NDArrayPtr<DType> pow(const NDArrayPtr<DType>& __arr, DType __power) {
+    NDArrayPtr<DType> ret = NDArrayPtr<DType>(new NDArray<DType>(__arr.shape()));
+    DType * ptr_ret = ret.data();
+    DType * ptr_src = __arr.data();
+    for (int i = 0; i < __arr.elemCount(); i++) {
+        ptr_ret = std::pow(ptr_src[i], __power);
     }
+    return ret;
 }
 
-NDArrayBool::Ptr operator && (const NDArrayBool::Ptr& __lhs, const NDArrayBool::Ptr& __rhs) {
-    if (__lhs->shape() != __rhs->shape()) throw std::runtime_error("Invaild input params");
-    NDArrayBool::Ptr ret = NDArrayBool::Ptr(new NDArrayBool(__lhs->shape()));
-    bool * ptr_ret = ret->data();
-    bool * ptr_lhs = __lhs->data();
-    bool * ptr_rhs = __rhs->data();
-    for (auto i = 0; i < ret->elemCount(); i++) {
-        ptr_ret[i] = (ptr_lhs[i] && ptr_rhs[i]);
-    }
-}
-
-}
+} // namepace nc
 
 #endif // NUMCXX_H

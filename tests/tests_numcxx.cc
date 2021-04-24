@@ -1,6 +1,7 @@
 #include <iostream>
 #include <gtest/gtest.h>
 #include <3rd/numcxx/numcxx.h>
+#include <3rd/numcxx/pad.h>
 
 class NCTest : public testing::Test {
 protected:
@@ -218,6 +219,34 @@ TEST_F(NCTest, argmin) {
         auto argmin2_gt = nc::NDArrayPtr<int>::FromVec2D( {{3, 1, 0}, {1, 1, 3}} );
         for (auto i = 0; i < argmin2.elemCount(); i++) {
             EXPECT_EQ(argmin2.getitem(i), argmin2_gt.getitem(i));
+        }
+    }
+}
+
+TEST_F(NCTest, reflect_pad1d) {
+    auto arr = nc::NDArrayPtr<float>::FromVec1D({ 1, 2, 3, 4, 5, });
+    {
+        std::vector<float> pad_gt = { 3, 2, 1, 2, 3, 4, 5, 4, 3, 2, };
+        auto pad = nc::reflect_pad1d(arr, {2, 3});
+        std::cout << pad << std::endl;
+        for (auto i = 0; i < pad.elemCount(); i++) {
+            EXPECT_EQ(pad.getitem(i), pad_gt[i]);
+        }
+    }
+    {
+        std::vector<float> pad_gt = { 3, 4, 5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3, 4, };
+        auto pad = nc::reflect_pad1d(arr, {6, 7});
+        std::cout << pad << std::endl;
+        for (auto i = 0; i < pad.elemCount(); i++) {
+            EXPECT_EQ(pad.getitem(i), pad_gt[i]);
+        }
+    }
+    {
+        std::vector<float> pad_gt = { 4, 3, 2, 1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3, 2, 1, };
+        auto pad = nc::reflect_pad1d(arr, {11, 12});
+        std::cout << pad << std::endl;
+        for (auto i = 0; i < pad.elemCount(); i++) {
+            EXPECT_EQ(pad.getitem(i), pad_gt[i]);
         }
     }
 }

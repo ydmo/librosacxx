@@ -17,6 +17,7 @@ set(
     ${CMAKE_CURRENT_LIST_DIR}/3rd/numcxx/numcxx.h
     ${CMAKE_CURRENT_LIST_DIR}/3rd/numcxx/alignmalloc.h
     ${CMAKE_CURRENT_LIST_DIR}/3rd/numcxx/ndarray.h
+    ${CMAKE_CURRENT_LIST_DIR}/3rd/numcxx/pad.h
 
     ## FFT Libraries.
     ${CMAKE_CURRENT_LIST_DIR}/3rd/fft/fft.h
@@ -32,12 +33,16 @@ set(
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/rosacxx.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/rosacxx.cc
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/filters.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/util/utils.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/util/utils.cc
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/constantq.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/constantq.cc
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/convert.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/convert.cc
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/pitch.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/pitch.cc
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/fft.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/fft.cc
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/spectrum.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/spectrum.cc
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/feature/spectral.h

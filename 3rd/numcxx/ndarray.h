@@ -1,5 +1,5 @@
-#ifndef ROSACXX_UTIL_ARRAY_H
-#define ROSACXX_UTIL_ARRAY_H
+#ifndef NUMCXX_NDARRAY_H
+#define NUMCXX_NDARRAY_H
 
 #include "alignmalloc.h"
 #include <half.h>
@@ -26,7 +26,22 @@ public:
         _data = NULL;
     }
 
-    NDArray(const std::vector<int>& __shape, const DType& __val = 0) : _shape(__shape) {
+    NDArray(const std::vector<int>& __shape) : _shape(__shape) {
+        int elemCnt = 1;
+        for (const int& s : __shape) {
+           elemCnt *= s;
+        }
+        _data = (DType *)alignedCalloc(32, elemCnt * sizeof (DType));
+        _strides.resize(__shape.size());
+        int tmp = 1;
+        for (int i = _strides.size() - 1; i >= 0; i--) {
+            _strides[i] = tmp;
+            tmp *= __shape[i];
+        }
+    }
+
+
+    NDArray(const std::vector<int>& __shape, const DType& __val) : _shape(__shape) {
         int elemCnt = 1;
         for (const int& s : __shape) {
            elemCnt *= s;
@@ -38,6 +53,28 @@ public:
             _data = (DType *)alignedMalloc(32, elemCnt * sizeof (DType));
             for (int n = 0; n < elemCnt; n++) {
                 _data[n] = __val;
+            }
+        }
+        _strides.resize(__shape.size());
+        int tmp = 1;
+        for (int i = _strides.size() - 1; i >= 0; i--) {
+            _strides[i] = tmp;
+            tmp *= __shape[i];
+        }
+    }
+
+    NDArray(const std::vector<int>& __shape, const DType * __dat) : _shape(__shape) {
+        int elemCnt = 1;
+        for (const int& s : __shape) {
+           elemCnt *= s;
+        }
+        if (__dat == NULL) {
+            _data = (DType *)alignedCalloc(32, elemCnt * sizeof (DType));
+        }
+        else {
+            _data = (DType *)alignedMalloc(32, elemCnt * sizeof (DType));
+            for (int n = 0; n < elemCnt; n++) {
+                _data[n] = __dat[n];
             }
         }
         _strides.resize(__shape.size());
@@ -505,6 +542,21 @@ public:
         return arr_min_idx;
     }
 
+    NDArrayPtr T() const {
+        auto _shape = get()->_shape;
+        if (_shape.size() != 2) throw std::runtime_error("Only 2D array (Matrix2D) can use T() method.");
+        auto _data = get()->_data;
+        auto _strides = get()->_strides;
+        auto ret = NDArrayPtr<DType>(new NDArray<DType>({_shape[1], _shape[0]}));
+        auto ptr_ret = ret.data();
+        for (auto i = 0; i < _shape[0]; i++) {
+            for (auto j = 0; j < _shape[1]; j++) {
+                ptr_ret[j * _shape[0] + i] = _data[i * _shape[1] + j];
+            }
+        }
+        return ret;
+    }
+
     template<typename RType>
     NDArrayPtr<DType> operator + (const RType& rhs) const {
         auto _data = get()->_data;
@@ -516,6 +568,25 @@ public:
             ptr_ret[i] = _data[i] + rhs;
         }
         return ret;
+    }
+
+    NDArrayPtr<DType> operator * (const NDArrayPtr<DType>& rhs) const {
+        DType * _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto _strides = get()->_strides;
+        if (_shape == rhs.shape()) { // is elementwise operation
+            auto ret = NDArrayPtr<DType>(new NDArray<DType>(_shape));
+            DType * ptr_ret = ret.data();
+            DType * ptr_rhs = rhs.data();
+            for (auto i = 0; i < elemCount(); i++) {
+                ptr_ret[i] = _data[i] * ptr_rhs[i];
+            }
+            return ret;
+        }
+        else {
+            throw std::runtime_error("Not implemented.");
+            return nullptr;
+        }
     }
 
     template<typename RType>

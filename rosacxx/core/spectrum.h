@@ -2,20 +2,22 @@
 #define ROSACXX_CORE_SPECTRUM_H
 
 #include <3rd/numcxx/numcxx.h>
+#include <rosacxx/core/fft.h>
+#include <rosacxx/filters.h>
 #include <vector>
 
 namespace rosacxx {
 namespace core {
 
-nc::NDArrayF32Ptr stft(
-    const nc::NDArrayF32Ptr& y,
-    const int& n_fft = 2048,
-    const int& hop_length = -1,
-    const int& win_length = -1,
-    const char * window="hann",
-    const bool& center = true,
-    const char * dtype = NULL,
-    const char * pad_mode = "reflect"
+nc::NDArrayPtr<Complex<float>> stft(
+        const nc::NDArrayF32Ptr& __y,
+        const int& __n_fft = 2048,
+        const int& __hop_length = -1,
+        const int& __win_length = -1,
+        const filters::STFTWindowType& __window = filters::STFTWindowType::Hanning,
+        const bool& __center = true,
+        const char * __dtype = NULL,
+        const char * __pad_mode = "reflect"
     );
 
 void _spectrogram(

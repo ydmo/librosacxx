@@ -54,6 +54,22 @@ void fft_inverse(unsigned int un, const kiss_fft_scalar_t *ri, const kiss_fft_sc
     delete[] out;
 }
 
+void rfft_forward(unsigned int n, const kiss_fft_scalar_t *ri, kiss_fft_scalar_t *co) {
+    auto m_fconf = vamp_kiss_fftr_alloc(n, false, 0, 0);
+    vamp_kiss_fftr(m_fconf, ri, (vamp_kiss_fft_cpx *)co);
+    free(m_fconf);
+}
+
+void rfft_inverse(unsigned int n, const kiss_fft_scalar_t *ci, kiss_fft_scalar_t *ro) {
+    auto m_iconf = vamp_kiss_fftr_alloc(n, true, 0, 0);
+    vamp_kiss_fftri(m_iconf, (vamp_kiss_fft_cpx *)ci, ro);
+    kiss_fft_scalar_t scale = 1.0 / n;
+    for (int i = 0; i < n; ++i) {
+        ro[i] = ro[i] * scale;
+    }
+    free(m_iconf);
+}
+
 class FFTComplex::D {
 public:
     D(int n) :

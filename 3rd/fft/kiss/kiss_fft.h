@@ -11,6 +11,9 @@ namespace vkfft {
 void fft_forward(unsigned int n, const kiss_fft_scalar_t *ri, const kiss_fft_scalar_t *ii, kiss_fft_scalar_t *ro, kiss_fft_scalar_t *io);
 void fft_inverse(unsigned int n, const kiss_fft_scalar_t *ri, const kiss_fft_scalar_t *ii, kiss_fft_scalar_t *ro, kiss_fft_scalar_t *io);
 
+void rfft_forward(unsigned int n, const kiss_fft_scalar_t *ri, kiss_fft_scalar_t *co);
+void rfft_inverse(unsigned int n, const kiss_fft_scalar_t *ci, kiss_fft_scalar_t *ro);
+
 class FFTComplex {
 public:
     FFTComplex(unsigned int n);

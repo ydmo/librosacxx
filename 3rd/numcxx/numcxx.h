@@ -2,6 +2,7 @@
 #define NUMCXX_H
 
 #include "ndarray.h"
+#include "pad.h"
 
 namespace nc {
 

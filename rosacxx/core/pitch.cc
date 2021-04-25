@@ -1,5 +1,8 @@
 #include <rosacxx/core/pitch.h>
 #include <rosacxx/core/convert.h>
+#include <rosacxx/core/spectrum.h>
+
+#include <rosacxx/filters.h>
 
 #include <memory>
 #include <cmath>
@@ -9,21 +12,26 @@ namespace rosacxx {
 namespace core {
 
 std::map<const char *, const nc::NDArrayF32Ptr> piptrack(
-        const nc::NDArrayF32Ptr& y  = nullptr,
-        const float& sr             = 22050,
-        const nc::NDArrayF32Ptr& S  = nullptr,
-        const int& n_fft            = 2048,
-        const int& hop_length       = -1,
-        const float& fmin           = 150.0,
-        const float& fmax           = 4000.0,
-        const float& threshold      = 0.1,
-        const int& win_length       = -1,
-        const char * window         = "hann",
-        const bool& center          = true,
-        const char * pad_mode       = "reflect",
-        float * ref                 = nullptr
+        const nc::NDArrayF32Ptr& __y,
+        nc::NDArrayF32Ptr& __S,
+        const int& __n_fft                      = 2048,
+        const float& __sr                       = 22050,
+        const int& __hop_length                 = -1,
+        const float& __fmin                     = 150.0,
+        const float& __fmax                     = 4000.0,
+        const float& __threshold                = 0.1,
+        const int& __win_length                 = -1,
+        const filters::STFTWindowType& __window = filters::STFTWindowType::Hanning,
+        const bool& __center                    = true,
+        const char * __pad_mode                 = "reflect",
+        float * __ref                           = nullptr
         ) {
     std::map<const char *, const nc::NDArrayF32Ptr> rets = { {"pitches", nullptr}, {"magnitudes", nullptr} };
+
+    int n_fft = __n_fft;
+    nc::NDArrayF32Ptr S = __S;
+
+    _spectrogram(__y, S, n_fft, __hop_length, 1, __win_length, __window, __center, __pad_mode);
 
     // pitch_mask
 

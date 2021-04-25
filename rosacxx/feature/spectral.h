@@ -6,7 +6,7 @@
 #include <cfloat>
 #include <cmath>
 
-#include <3rd/numcxx/numcxx.h>
+#include <rosacxx/numcxx/numcxx.h>
 #include <rosacxx/core/constantq.h>
 #include <rosacxx/filters.h>
 

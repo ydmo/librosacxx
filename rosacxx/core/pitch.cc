@@ -13,9 +13,9 @@ namespace core {
 
 std::map<const char *, const nc::NDArrayF32Ptr> piptrack(
         const nc::NDArrayF32Ptr& __y,
+        const float& __sr,
         nc::NDArrayF32Ptr& __S,
         const int& __n_fft                      = 2048,
-        const float& __sr                       = 22050,
         const int& __hop_length                 = -1,
         const float& __fmin                     = 150.0,
         const float& __fmax                     = 4000.0,
@@ -41,7 +41,7 @@ std::map<const char *, const nc::NDArrayF32Ptr> piptrack(
 float estimate_tuning(
         const nc::NDArrayF32Ptr& y, //  = nullptr,
         const float& sr, //             = 22050,
-        const nc::NDArrayF32Ptr& S, //  = nullptr,
+        nc::NDArrayF32Ptr& S, //  = nullptr,
         const int& n_fft, //            = 2048,
         const float& resolution, //     = 0.01f,
         const int& bins_per_octave, //  = 12,
@@ -50,11 +50,12 @@ float estimate_tuning(
         const float& fmax, //           = 4000.0,
         const float& threshold, //      = 0.1,
         const int& win_length, //       = -1,
-        const char * window, //         = "hann",
+        const filters::STFTWindowType& window, //         = "hann",
         const bool& center, //          = true,
         const char * pad_mode, //       = "reflect",
         float * ref //                  = nullptr
         ) {
+
     auto pitch_mag = piptrack(y, sr, S, n_fft, hop_length, fmin, fmax, threshold, win_length, window, center, pad_mode, ref); // pitch, mag = piptrack(y=y, sr=sr, S=S, n_fft=n_fft, **kwargs)
     nc::NDArrayF32Ptr pitch = pitch_mag["pitch"];
     nc::NDArrayF32Ptr mag = pitch_mag["magnitudes"];

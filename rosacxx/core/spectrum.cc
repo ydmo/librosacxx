@@ -2,7 +2,7 @@
 #include <rosacxx/core/spectrum.h>
 #include <rosacxx/core/convert.h>
 #include <rosacxx/core/fft.h>
-#include <3rd/fft/kiss/kiss_fft.h>
+#include <rosacxx/fft/kiss/kiss_fft.h>
 
 #include <memory>
 #include <cmath>
@@ -11,6 +11,8 @@
 
 namespace rosacxx {
 namespace core {
+
+using namespace complex;
 
 nc::NDArrayPtr<Complex<float>> stft(
         const nc::NDArrayF32Ptr& __y,

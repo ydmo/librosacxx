@@ -13,21 +13,27 @@ set(
 
     # Thrid-Parties ----------------------------------------------
 
+    ## Half Float
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/half/half.h
+
+    ## Complex Data
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/complex/complex.h
+
     ## N-Dimension Array Library like numpy.
-    ${CMAKE_CURRENT_LIST_DIR}/3rd/numcxx/numcxx.h
-    ${CMAKE_CURRENT_LIST_DIR}/3rd/numcxx/alignmalloc.h
-    ${CMAKE_CURRENT_LIST_DIR}/3rd/numcxx/ndarray.h
-    ${CMAKE_CURRENT_LIST_DIR}/3rd/numcxx/pad.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/numcxx/numcxx.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/numcxx/alignmalloc.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/numcxx/ndarray.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/numcxx/pad.h
 
     ## FFT Libraries.
-    ${CMAKE_CURRENT_LIST_DIR}/3rd/fft/fft.h
-    ${CMAKE_CURRENT_LIST_DIR}/3rd/fft/fft.cc
-    ${CMAKE_CURRENT_LIST_DIR}/3rd/fft/kiss/ext/vamp_kiss_fft_guts.h
-    ${CMAKE_CURRENT_LIST_DIR}/3rd/fft/kiss/ext/vamp_kiss_fft_scalar.h
-    ${CMAKE_CURRENT_LIST_DIR}/3rd/fft/kiss/ext/vamp_kiss_fft.h
-    ${CMAKE_CURRENT_LIST_DIR}/3rd/fft/kiss/ext/vamp_kiss_fftr.h
-    ${CMAKE_CURRENT_LIST_DIR}/3rd/fft/kiss/kiss_fft.h
-    ${CMAKE_CURRENT_LIST_DIR}/3rd/fft/kiss/kiss_fft.cc
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/fft/fft.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/fft/fft.cc
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/fft/kiss/ext/vamp_kiss_fft_guts.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/fft/kiss/ext/vamp_kiss_fft_scalar.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/fft/kiss/ext/vamp_kiss_fft.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/fft/kiss/ext/vamp_kiss_fftr.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/fft/kiss/kiss_fft.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/fft/kiss/kiss_fft.cc
 
     # ROSA -------------------------------------------------------
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/rosacxx.h

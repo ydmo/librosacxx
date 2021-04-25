@@ -35,15 +35,3 @@ TEST_F(FFTTest, rfft) {
     }
 }
 
-namespace rosa {
-namespace tests {
-
-void tests_fft() {
-    ::testing::InitGoogleTest();
-    ::testing::GTEST_FLAG(filter) = "FFTTest*";
-    RUN_ALL_TESTS();
-}
-
-} // namespace tests
-} // namespace rosa
-

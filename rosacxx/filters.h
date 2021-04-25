@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include <3rd/numcxx/numcxx.h>
+#include <rosacxx/numcxx/numcxx.h>
 
 namespace rosacxx {
 namespace filters {

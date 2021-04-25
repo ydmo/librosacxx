@@ -469,15 +469,3 @@ TEST_F(ROSACXXTest, stft) {
     }
 }
 
-namespace rosa {
-namespace tests {
-
-void tests_rosacxx() {
-    ::testing::InitGoogleTest();
-    ::testing::GTEST_FLAG(filter) = "ROSACXXTest*";
-    RUN_ALL_TESTS();
-}
-
-} // namespace tests
-} // namespace rosa
-

@@ -1,8 +1,10 @@
 #include "fft.h"
-#include <3rd/fft/fft.h>
+#include <rosacxx/fft/fft.h>
 
 namespace rosacxx {
 namespace core {
+
+using namespace complex;
 
 nc::NDArrayPtr<Complex<float>> rfft(const nc::NDArrayPtr<float>& __real_data, const int& __n_fft) {
     nc::NDArrayPtr<Complex<float>> co = nc::NDArrayPtr<Complex<float>>(new nc::NDArray<Complex<float>>({__n_fft / 2 + 1}));

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <gtest/gtest.h>
-#include <3rd/numcxx/numcxx.h>
-#include <3rd/numcxx/pad.h>
+#include <rosacxx/numcxx/numcxx.h>
+#include <rosacxx/numcxx/pad.h>
 
 class NCTest : public testing::Test {
 protected:
@@ -250,17 +250,4 @@ TEST_F(NCTest, reflect_pad1d) {
         }
     }
 }
-
-
-namespace rosa {
-namespace tests {
-
-void tests_numcxx() {
-    ::testing::InitGoogleTest();
-    ::testing::GTEST_FLAG(filter) = "NCTest*";
-    RUN_ALL_TESTS();
-}
-
-} // namespace tests
-} // namespace rosa
 

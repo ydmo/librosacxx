@@ -24,23 +24,17 @@ struct Complex {
     bool operator == (const Complex<DType>& __other) const {
         return (this->r == __other.r) && (this->i == __other.i);
     }
-
-//    Complex<DType> operator = (const Complex<DType>& __val) {
-//        return Complex<DType>(__val.r, __val.i);
-//    }
-
-//    Complex<DType> operator = (const DType& __val) {
-//        return Complex<DType>(__val);
-//    }
 };
 
 template<typename DType>
 inline std::ostream &operator << (std::ostream &__os, const Complex<DType>& __cpx) {
-    __os << int((__cpx.r) * 1e6) * 1e-6 << "+" << int((__cpx.i) * 1e6) * 1e-6 << "j";
+    __os << int((__cpx.r) * 1e6) * 1e-6 << " + " << int((__cpx.i) * 1e6) * 1e-6 << "j";
     return __os;
 }
 
-nc::NDArrayPtr<Complex<float>> rfft(const nc::NDArrayPtr<float>& __real_data, const int& __n_fft);
+nc::NDArrayPtr<Complex<float >> rfft(const nc::NDArrayPtr<float >& __real_data, const int& __n_fft);
+
+nc::NDArrayPtr<Complex<double>> rfft(const nc::NDArrayPtr<double>& __real_data, const int& __n_fft);
 
 } // namespace core
 } // namespace rosacxx

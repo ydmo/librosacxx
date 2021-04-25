@@ -70,8 +70,10 @@ if (BUILD_ROSACXX_TESTS)
     target_link_libraries(rosacxx_tests PUBLIC ${GTEST_LIBRARIES})
 endif()
 
+add_definitions(-DUSE_VAMP_KISS_FFT)
 if (BUILD_ROSACXX_FFT_WITH_SINGLE_PRECISION)
     add_definitions(-DROSACXX_FFT_PRECISION_F32=1)
-    add_definitions(-DUSE_VAMP_KISS_FFT)
+else()
+    add_definitions(-DROSACXX_FFT_PRECISION_F32=0)
 endif()
 

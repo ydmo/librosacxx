@@ -2,8 +2,6 @@
 #include <rosacxx/core/spectrum.h>
 #include <rosacxx/core/convert.h>
 #include <rosacxx/core/fft.h>
-
-
 #include <3rd/fft/kiss/kiss_fft.h>
 
 #include <memory>
@@ -21,7 +19,6 @@ nc::NDArrayPtr<Complex<float>> stft(
         const int& __win_length, // = -1,
         const filters::STFTWindowType& __window, //="hann",
         const bool& __center, // = true,
-        const char * __dtype, // = NULL,
         const char * __pad_mode  // = "reflect"
         ) {
 
@@ -60,31 +57,68 @@ nc::NDArrayPtr<Complex<float>> stft(
     Complex<float> * ptr_stft_mat = stft_mat.data();
     float * ptr_frame = y.data();
 
+    kiss_fft_scalar_t * tmp_ri = (kiss_fft_scalar_t *)nc::alignedMalloc(32, __n_fft * sizeof(kiss_fft_scalar_t));
+    kiss_fft_scalar_t * tmp_co = (kiss_fft_scalar_t *)nc::alignedMalloc(32, numFFTOut * sizeof(kiss_fft_scalar_t) * 2);
+
     for (auto i = 0; i < numFrames; i++) {
-        auto ri = nc::NDArrayF32Ptr(new nc::NDArrayF32({__n_fft}, ptr_frame)) * fft_window;
-        rfft.forward(ri.data(), (float *)ptr_stft_mat);
+
+        for (auto j = 0; j < __n_fft; j++) {
+            tmp_ri[j] = ptr_frame[j]  * fft_window.getitem(j);
+        }
+
+        rfft.forward(tmp_ri, tmp_co);
+
+        for (auto j = 0; j < numFFTOut; j++) {
+            ptr_stft_mat[j].r = tmp_co[j * 2 + 0];
+            ptr_stft_mat[j].i = tmp_co[j * 2 + 1];
+        }
+
         ptr_stft_mat += numFFTOut;
         ptr_frame += hop_length;
     }
+
+    nc::alignedFree(tmp_ri);
+    nc::alignedFree(tmp_co);
 
     return stft_mat.T();
 }
 
 void _spectrogram(
-        const nc::NDArrayF32Ptr& y,
-        nc::NDArrayF32Ptr&       S,
-        int&                     n_fft,
-        const int&               hop_length, //  = 512,
-        const float&             power, //       = 1,
-        const int&               win_length, //  = -1,
-        const char *             window, //      = "hann",
-        const bool&              center, //      = true,
-        const char *             pad_mode  //    = "reflect"
+        const nc::NDArrayF32Ptr&        __y,
+        nc::NDArrayF32Ptr&              __S,
+        int&                            __n_fft,
+        const int&                      __hop_length,
+        const float&                    __power,
+        const int&                      __win_length,
+        const filters::STFTWindowType&  __window,
+        const bool&                     __center,
+        const char *                    __pad_mode
         ) {
-    if (S != nullptr) {
-        n_fft = 2 * (S.shape()[0] - 1);
+    if (__S != nullptr) {
+        __n_fft = 2 * (__S.shape()[0] - 1);
+    }
+    else {
+        auto tmp = stft(__y, __n_fft, __hop_length, __win_length, __window, __center, __pad_mode);
+        auto S = nc::NDArrayF32Ptr(new nc::NDArrayF32(tmp.shape()));
+        Complex<float> * ptr_tmp = tmp.data();
+        float * ptr_S = S.data();
+        if (__power == 1) {
+            for (auto i = 0; i < tmp.elemCount(); i++) {
+                ptr_S[i] = std::sqrt( ptr_tmp[i].r * ptr_tmp[i].r + ptr_tmp[i].i * ptr_tmp[i].i );
+            }
+        }
+        else if (__power == 2) {
+            for (auto i = 0; i < tmp.elemCount(); i++) {
+                ptr_S[i] = ptr_tmp[i].r * ptr_tmp[i].r + ptr_tmp[i].i * ptr_tmp[i].i;
+            }
+        }
+        else {
+            for (auto i = 0; i < tmp.elemCount(); i++) {
+                ptr_S[i] = std::pow(std::sqrt( ptr_tmp[i].r * ptr_tmp[i].r + ptr_tmp[i].i * ptr_tmp[i].i ), __power);
+            }
+        }
     }
 }
 
-} // namespace rosacxx
 } // namespace core
+} // namespace rosacxx

@@ -26,15 +26,19 @@ std::map<const char *, const nc::NDArrayF32Ptr> piptrack(
         const char * __pad_mode                 = "reflect",
         float * __ref                           = nullptr
         ) {
-    std::map<const char *, const nc::NDArrayF32Ptr> rets = { {"pitches", nullptr}, {"magnitudes", nullptr} };
-
+    float sr = __sr;
     int n_fft = __n_fft;
     nc::NDArrayF32Ptr S = __S;
 
     _spectrogram(__y, S, n_fft, __hop_length, 1, __win_length, __window, __center, __pad_mode);
 
     // pitch_mask
+    float fmin = std::max(__fmin, 0.f);
+    float fmax = std::min(__fmax, __sr / 2.f);
 
+    auto fft_freqs = fft_frequencies(sr, n_fft);
+
+    std::map<const char *, const nc::NDArrayF32Ptr> rets = { {"pitches", nullptr}, {"magnitudes", nullptr} };
     return rets;
 }
 

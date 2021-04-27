@@ -4,6 +4,9 @@
 #include "ndarray.h"
 #include "pad.h"
 
+#include <rosacxx/half/half.h>
+#include <rosacxx/complex/complex.h>
+
 namespace nc {
 
 template<typename DType>
@@ -124,6 +127,17 @@ NDArrayPtr<DType> abs(const NDArrayPtr<DType>& __arr) {
     DType * ptr_src = __arr.data();
     for (int i = 0; i < __arr.elemCount(); i++) {
         ptr_ret = std::abs(ptr_src[i]);
+    }
+    return ret;
+}
+
+template<typename DType>
+NDArrayPtr<DType> abs(const NDArrayPtr<complex::Complex<DType>>& __arr) {
+    NDArrayPtr<DType> ret = NDArrayPtr<DType>(new NDArray<DType>(__arr.shape()));
+    DType * ptr_ret = ret.data();
+    complex::Complex<DType> * ptr_src = __arr.data();
+    for (int i = 0; i < __arr.elemCount(); i++) {
+        ptr_ret = std::sqrt(ptr_src[i].r * ptr_src[i].r + ptr_src[i].i * ptr_src[i].i);
     }
     return ret;
 }

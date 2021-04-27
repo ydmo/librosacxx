@@ -57,5 +57,9 @@ nc::NDArrayF32Ptr midi_to_hz(const nc::NDArrayS32Ptr& midi) {
     return hz;
 }
 
+nc::NDArrayF32Ptr fft_frequencies(const float& __sr, const int& __n_fft) {
+    return nc::linspace(0.f, __sr * 0.5f, (__n_fft >> 1) + 1, true);
+}
+
 } // namespace core
 } // namespace rosacxx

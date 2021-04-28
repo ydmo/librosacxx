@@ -38,6 +38,24 @@ std::map<const char *, const nc::NDArrayF32Ptr> piptrack(
 
     auto fft_freqs = fft_frequencies(sr, n_fft);
 
+    auto shapeS = S.shape();
+    nc::NDArrayF32Ptr avg   = nc::NDArrayF32Ptr(new nc::NDArrayF32({shapeS[0]-2, shapeS[1]}));
+    nc::NDArrayF32Ptr shift = nc::NDArrayF32Ptr(new nc::NDArrayF32({shapeS[0]-2, shapeS[1]}));
+    float * ptr_avg = avg.data();
+    float * ptr_shift = shift.data();
+    float * ptr_S = S.data();
+    for (auto i = 0; i < shapeS[0]-2; i++) {
+        for (auto j = 0; j < shapeS[1]; j++) {
+            *ptr_avg++ = (ptr_S[(i + 2) * shapeS[1] + j] - ptr_S[i * shapeS[1] + j]) * 0.5f; // avg = 0.5 * (S[2:] - S[:-2])
+            *ptr_shift++ = 2 * ptr_S[(i + 1) * shapeS[1] + j] - ptr_S[(i + 2) * shapeS[1] + j] - ptr_S[i * shapeS[1] + j];// shift = 2 * S[1:-1] - S[2:] - S[:-2]
+        }
+    }
+
+    shift = avg / (shift + (nc::abs(shift) < 1.1754944e-38f)); // shift = avg / (shift + (np.abs(shift) < util.tiny(shift)))
+
+    avg   = nc::pad(avg,   {{1, 1}, {0, 0}}); // avg   = np.pad(avg, ([1, 1], [0, 0]), mode="constant")
+    shift = nc::pad(shift, {{1, 1}, {0, 0}}); // shift = np.pad(shift, ([1, 1], [0, 0]), mode="constant")
+
     std::map<const char *, const nc::NDArrayF32Ptr> rets = { {"pitches", nullptr}, {"magnitudes", nullptr} };
     return rets;
 }

@@ -3,5 +3,6 @@
         "vamp_kiss_fft.c": "cpp",
         "*.bk": "cpp",
         "iostream": "cpp"
-    }
+    },
+    "python.pythonPath": "/home/yuda/anaconda3/envs/py37/bin/python"
 }

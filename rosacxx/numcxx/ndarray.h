@@ -589,6 +589,44 @@ public:
         }
     }
 
+    NDArrayPtr<DType> operator / (const NDArrayPtr<DType>& rhs) const {
+        DType * _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto _strides = get()->_strides;
+        if (_shape == rhs.shape()) { // is elementwise operation
+            auto ret = NDArrayPtr<DType>(new NDArray<DType>(_shape));
+            DType * ptr_ret = ret.data();
+            DType * ptr_rhs = rhs.data();
+            for (auto i = 0; i < elemCount(); i++) {
+                ptr_ret[i] = _data[i] / ptr_rhs[i];
+            }
+            return ret;
+        }
+        else {
+            throw std::runtime_error("Not implemented.");
+            return nullptr;
+        }
+    }
+
+    NDArrayPtr<DType> operator + (const NDArrayPtr<bool>& rhs) const {
+        DType * _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto _strides = get()->_strides;
+        if (_shape == rhs.shape()) { // is elementwise operation
+            auto ret = NDArrayPtr<DType>(new NDArray<DType>(_shape));
+            DType * ptr_ret = ret.data();
+            bool * ptr_rhs = rhs.data();
+            for (auto i = 0; i < elemCount(); i++) {
+                ptr_ret[i] = _data[i] + (ptr_rhs[i] ? DType(1) : DType(0));
+            }
+            return ret;
+        }
+        else {
+            throw std::runtime_error("Not implemented.");
+            return nullptr;
+        }
+    }
+
     template<typename RType>
     NDArrayPtr<bool> operator < (const RType& rhs) const {
         auto _data = get()->_data;

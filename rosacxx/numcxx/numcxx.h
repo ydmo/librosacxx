@@ -126,7 +126,7 @@ NDArrayPtr<DType> abs(const NDArrayPtr<DType>& __arr) {
     DType * ptr_ret = ret.data();
     DType * ptr_src = __arr.data();
     for (int i = 0; i < __arr.elemCount(); i++) {
-        ptr_ret = std::abs(ptr_src[i]);
+        ptr_ret[i] = std::abs(ptr_src[i]);
     }
     return ret;
 }
@@ -137,7 +137,7 @@ NDArrayPtr<DType> abs(const NDArrayPtr<complex::Complex<DType>>& __arr) {
     DType * ptr_ret = ret.data();
     complex::Complex<DType> * ptr_src = __arr.data();
     for (int i = 0; i < __arr.elemCount(); i++) {
-        ptr_ret = std::sqrt(ptr_src[i].r * ptr_src[i].r + ptr_src[i].i * ptr_src[i].i);
+        ptr_ret[i] = std::sqrt(ptr_src[i].r * ptr_src[i].r + ptr_src[i].i * ptr_src[i].i);
     }
     return ret;
 }

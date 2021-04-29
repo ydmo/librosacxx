@@ -20,7 +20,7 @@ NDArrayPtr<DType> pad(const NDArrayPtr<DType>& __array, const std::vector<std::p
     for (auto d = 0; d < dims; d++) {
         newshape[d] += (__pad_width[d].first + __pad_width[d].second);
     }
-    NDArrayPtr<DType> ret = NDArrayPtr<DType>(new NDArrayPtr<DType>(newshape, __constan_val));
+    NDArrayPtr<DType> ret = NDArrayPtr<DType>(new NDArray<DType>(newshape, __constan_val));
     const std::vector<int> newstrides = ret.strides();
     DType *ptr_ret = ret.data();
     DType *ptr_src = __array.data();

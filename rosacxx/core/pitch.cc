@@ -56,8 +56,34 @@ std::map<const char *, const nc::NDArrayF32Ptr> piptrack(
     avg   = nc::pad(avg,   {{1, 1}, {0, 0}}); // avg   = np.pad(avg, ([1, 1], [0, 0]), mode="constant")
     shift = nc::pad(shift, {{1, 1}, {0, 0}}); // shift = np.pad(shift, ([1, 1], [0, 0]), mode="constant")
 
-    std::map<const char *, const nc::NDArrayF32Ptr> rets = { {"pitches", nullptr}, {"magnitudes", nullptr} };
-    return rets;
+    auto dskew = .5f * avg * shift; // dskew = 0.5 * avg * shift
+
+    auto pitches = nc::zeros_like(S);
+    auto mags = nc::zeros_like(S);
+
+    auto freq_mask = ((fmin <= fft_freqs) & (fft_freqs < fmax)).reshape({-1, 1}); // freq_mask = ((fmin <= fft_freqs) & (fft_freqs < fmax)).reshape((-1, 1))
+
+    //# Compute the column-wise local max of S after thresholding
+    //# Find the argmax coordinates
+    //if ref is None:
+    //    ref = np.max
+
+    //if callable(ref):
+    //    ref_value = threshold * ref(S, axis=0)
+    //else:
+    //    ref_value = np.abs(ref)
+
+    auto ref_value = __threshold * nc::max(S, 0);
+
+    //idx = np.argwhere(freq_mask & util.localmax(S * (S > ref_value)))
+    //# Store pitch and magnitude
+    //pitches[idx[:, 0], idx[:, 1]] = (
+    //    (idx[:, 0] + shift[idx[:, 0], idx[:, 1]]) * float(sr) / n_fft
+    //)
+    //mags[idx[:, 0], idx[:, 1]] = S[idx[:, 0], idx[:, 1]] + dskew[idx[:, 0], idx[:, 1]]
+
+    // std::map<const char *, const nc::NDArrayF32Ptr> rets = { {"pitches", pitches}, {"magnitudes", mags} };
+    return { {"pitches", pitches}, {"magnitudes", mags} };
 }
 
 float estimate_tuning(

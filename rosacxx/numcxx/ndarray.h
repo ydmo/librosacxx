@@ -502,6 +502,46 @@ public:
         return arr_max_idx;
     }
 
+    NDArrayPtr max(int __axis) const {
+        auto _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto _strides = get()->_strides;
+
+        std::vector<int> shape_am;
+        for (int i = 0; i < _shape.size(); i++) {
+            if (i == __axis) continue;
+            shape_am.push_back(i);
+        }
+
+        auto arr_max_val = NDArrayPtr<DType>(new NDArray<DType>(shape_am, min()));
+        auto arr_max_idx = NDArrayPtr<int  >(new NDArray<int  >(shape_am));
+
+        for (auto i = 0; i < elemCount(); i++) {
+
+            std::vector<int> coor(_shape.size());
+            int remainder = i;
+            for(int d = 0; d < _shape.size(); d++) {
+                coor[d] = remainder / _strides[d];
+                remainder -= (coor[d] * _strides[d]);
+                if (d == __axis) {
+                    continue;
+                }
+            }
+
+            DType curr_val = _data[i];
+            int   curr_idx = coor[__axis];
+
+            std::vector<int> am_coor = coor; am_coor.erase(am_coor.begin()+__axis);
+
+            if (arr_max_val.getitem(am_coor) < curr_val) {
+                arr_max_val.at(am_coor)[0] = curr_val;
+                arr_max_idx.at(am_coor)[0] = curr_idx;
+            }
+        }
+
+        return arr_max_val;
+    }
+
     NDArrayPtr<int> argmin(int __axis) const {
         auto _data = get()->_data;
         auto _shape = get()->_shape;
@@ -542,6 +582,46 @@ public:
         return arr_min_idx;
     }
 
+    NDArrayPtr min(int __axis) const {
+        auto _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto _strides = get()->_strides;
+
+        std::vector<int> shape_am;
+        for (int i = 0; i < _shape.size(); i++) {
+            if (i == __axis) continue;
+            shape_am.push_back(i);
+        }
+
+        auto arr_min_val = NDArrayPtr<DType>(new NDArray<DType>(shape_am, max()));
+        auto arr_min_idx = NDArrayPtr<int  >(new NDArray<int  >(shape_am));
+
+        for (auto i = 0; i < elemCount(); i++) {
+
+            std::vector<int> coor(_shape.size());
+            int remainder = i;
+            for(int d = 0; d < _shape.size(); d++) {
+                coor[d] = remainder / _strides[d];
+                remainder -= (coor[d] * _strides[d]);
+                if (d == __axis) {
+                    continue;
+                }
+            }
+
+            DType curr_val = _data[i];
+            int   curr_idx = coor[__axis];
+
+            std::vector<int> am_coor = coor; am_coor.erase(am_coor.begin()+__axis);
+
+            if (arr_min_val.getitem(am_coor) > curr_val) {
+                arr_min_val.at(am_coor)[0] = curr_val;
+                arr_min_idx.at(am_coor)[0] = curr_idx;
+            }
+        }
+
+        return arr_min_val;
+    }
+
     NDArrayPtr T() const {
         auto _shape = get()->_shape;
         if (_shape.size() != 2) throw std::runtime_error("Only 2D array (Matrix2D) can use T() method.");
@@ -557,6 +637,35 @@ public:
         return ret;
     }
 
+    NDArrayPtr reshape(const std::vector<int>& __newshape) const {
+        auto _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto _strides = get()->_strides;
+        // ------------------------------------------------------------------
+        std::vector<int> new_shape(__newshape.size());
+        int k = 1;
+        int neg_dim = 0;
+        int neg_cnt = 0;
+        for (auto i = 0; i < __newshape.size(); i++) {
+            if (__newshape[i] > 0) {
+                k *= __newshape[i];
+                new_shape[i] = __newshape[i];
+            } else {
+                neg_dim = i;
+                neg_cnt += 1;
+            }
+        }
+        const int elemCnt = elemCount();
+        if (elemCnt < k || (elemCnt % k) != 0 || neg_cnt > 1) {
+            throw std::invalid_argument("Invalid input new shape.");
+        }
+        if(neg_cnt > 0) {
+            new_shape[neg_dim] = elemCnt / k;
+        }
+        // ------------------------------------------------------------------
+        return NDArrayPtr<DType>(new NDArray<DType>(new_shape, _data));;
+    }
+
     template<typename RType>
     NDArrayPtr<DType> operator + (const RType& rhs) const {
         auto _data = get()->_data;
@@ -566,6 +675,19 @@ public:
         auto ptr_ret = ret.data();
         for (auto i = 0; i < elemCount(); i++) {
             ptr_ret[i] = _data[i] + rhs;
+        }
+        return ret;
+    }
+
+    template<typename RType>
+    NDArrayPtr<DType> operator * (const RType& rhs) const {
+        auto _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto _strides = get()->_strides;
+        auto ret = NDArrayPtr<DType>(new NDArray<DType>(_shape));
+        auto ptr_ret = ret.data();
+        for (auto i = 0; i < elemCount(); i++) {
+            ptr_ret[i] = _data[i] * rhs;
         }
         return ret;
     }
@@ -664,7 +786,7 @@ public:
     }
 
     template<typename RType>
-    NDArrayPtr<bool> operator >= (const RType& rhs) {
+    NDArrayPtr<bool> operator >= (const RType& rhs) const {
         auto _data = get()->_data;
         auto _shape = get()->_shape;
         NDArrayPtr<bool> ret = NDArrayPtr<bool>(new NDArrayBool(_shape));

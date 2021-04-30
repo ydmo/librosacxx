@@ -82,7 +82,7 @@ inline NDArrayS32Ptr histogram(const NDArrayPtr<DType>& a, const NDArrayPtr<DTyp
 }
 
 template<typename DType>
-NDArrayPtr<DType> arange(DType __x) {
+inline NDArrayPtr<DType> arange(DType __x) {
     int cx = int(std::ceil(__x));
     std::vector<DType> vec;
     for (int i = 0; i < cx; i++) {
@@ -92,7 +92,7 @@ NDArrayPtr<DType> arange(DType __x) {
 }
 
 template<typename DType>
-NDArrayS32Ptr argmax(const NDArrayPtr<DType>& a, int axis = -1) {
+inline NDArrayS32Ptr argmax(const NDArrayPtr<DType>& a, int axis = -1) {
     if (axis >= 0) {
         return a.argmax(axis);
     }
@@ -102,7 +102,17 @@ NDArrayS32Ptr argmax(const NDArrayPtr<DType>& a, int axis = -1) {
 }
 
 template<typename DType>
-NDArrayS32Ptr argmin(const NDArrayPtr<DType>& a, int axis = -1) {
+inline NDArrayPtr<DType> max(const NDArrayPtr<DType>& a, int axis = -1) {
+    if (axis >= 0) {
+        return a.max(axis);
+    }
+    else {
+        return NDArrayPtr<DType>::FromScalar(a.max());
+    }
+}
+
+template<typename DType>
+inline NDArrayS32Ptr argmin(const NDArrayPtr<DType>& a, int axis = -1) {
     if (axis >= 0) {
         return a.argmin(axis);
     }
@@ -112,7 +122,7 @@ NDArrayS32Ptr argmin(const NDArrayPtr<DType>& a, int axis = -1) {
 }
 
 template<typename DType>
-DType median(const NDArrayPtr<DType>& __arr) {
+inline DType median(const NDArrayPtr<DType>& __arr) {
     DType sum = 0;
     for (int i = 0; i < __arr.elemCount(); i++) {
         sum += __arr.getitem(i);
@@ -121,7 +131,7 @@ DType median(const NDArrayPtr<DType>& __arr) {
 }
 
 template<typename DType>
-NDArrayPtr<DType> abs(const NDArrayPtr<DType>& __arr) {
+inline NDArrayPtr<DType> abs(const NDArrayPtr<DType>& __arr) {
     NDArrayPtr<DType> ret = NDArrayPtr<DType>(new NDArray<DType>(__arr.shape()));
     DType * ptr_ret = ret.data();
     DType * ptr_src = __arr.data();
@@ -132,7 +142,7 @@ NDArrayPtr<DType> abs(const NDArrayPtr<DType>& __arr) {
 }
 
 template<typename DType>
-NDArrayPtr<DType> abs(const NDArrayPtr<complex::Complex<DType>>& __arr) {
+inline NDArrayPtr<DType> abs(const NDArrayPtr<complex::Complex<DType>>& __arr) {
     NDArrayPtr<DType> ret = NDArrayPtr<DType>(new NDArray<DType>(__arr.shape()));
     DType * ptr_ret = ret.data();
     complex::Complex<DType> * ptr_src = __arr.data();
@@ -143,7 +153,7 @@ NDArrayPtr<DType> abs(const NDArrayPtr<complex::Complex<DType>>& __arr) {
 }
 
 template<typename DType>
-NDArrayPtr<DType> pow(const NDArrayPtr<DType>& __arr, DType __power) {
+inline NDArrayPtr<DType> pow(const NDArrayPtr<DType>& __arr, DType __power) {
     NDArrayPtr<DType> ret = NDArrayPtr<DType>(new NDArray<DType>(__arr.shape()));
     DType * ptr_ret = ret.data();
     DType * ptr_src = __arr.data();
@@ -151,6 +161,47 @@ NDArrayPtr<DType> pow(const NDArrayPtr<DType>& __arr, DType __power) {
         ptr_ret = std::pow(ptr_src[i], __power);
     }
     return ret;
+}
+
+template<typename DType>
+inline NDArrayPtr<DType> operator * (const DType& lhs, const NDArrayPtr<DType>& rhs) {
+    auto r_data = rhs.data();
+    auto r_shape = rhs.shape();
+    auto ret = NDArrayPtr<DType>(new NDArray<DType>(r_shape));
+    auto ptr_ret = ret.data();
+    for (auto i = 0; i < rhs.elemCount(); i++) {
+        ptr_ret[i] = r_data[i] * lhs;
+    }
+    return ret;
+}
+
+template<typename LType, typename RType>
+NDArrayPtr<bool> operator >= (const LType& lhs, const NDArrayPtr<RType>& rhs) {
+    auto r_data = rhs.data();
+    auto r_shape = rhs.shape();
+    NDArrayPtr<bool> ret = NDArrayPtr<bool>(new NDArrayBool(r_shape));
+    bool * ptr_ret = ret.data();
+    for (auto i = 0; i < ret.elemCount(); i++) {
+        if (lhs >= r_data[i]) ptr_ret[i] = true;
+    }
+    return ret;
+}
+
+template<typename LType, typename RType>
+NDArrayPtr<bool> operator <= (const LType& lhs, const NDArrayPtr<RType>& rhs) {
+    auto r_data = rhs.data();
+    auto r_shape = rhs.shape();
+    NDArrayPtr<bool> ret = NDArrayPtr<bool>(new NDArrayBool(r_shape));
+    bool * ptr_ret = ret.data();
+    for (auto i = 0; i < ret.elemCount(); i++) {
+        if (lhs <= r_data[i]) ptr_ret[i] = true;
+    }
+    return ret;
+}
+
+template<typename DType>
+inline NDArrayPtr<DType> zeros_like(const NDArrayPtr<DType>& __arr) {
+    return NDArrayPtr<DType>(new NDArray<DType>(__arr.shape()));
 }
 
 } // namepace nc

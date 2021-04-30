@@ -5,6 +5,7 @@
 #include <rosacxx/core/pitch.h>
 #include <rosacxx/core/convert.h>
 #include <rosacxx/core/spectrum.h>
+#include <rosacxx/core/audio.h>
 
 class ROSACXXTest : public testing::Test {
 protected:
@@ -467,5 +468,15 @@ TEST_F(ROSACXXTest, stft) {
             EXPECT_NEAR( arr_stft_matrix.getitem(i,j).i, vec2d_x[j][i * 2 + 1], 1e-6);
         }
     }
+}
+
+TEST_F(ROSACXXTest, tone) {
+    float duration = 0.2;
+    auto y = rosacxx::core::tone(440.f, 22050.f, NULL, &duration);
+    EXPECT_NEAR(y.getitem(0),     6.123233995736766e-17, 1e-6);
+    EXPECT_NEAR(y.getitem(125),   0.03561143311112808, 1e-6);
+    EXPECT_NEAR(y.getitem(333),  -0.7897618899405409, 1e-6);
+    EXPECT_NEAR(y.getitem(1333), -0.5854775612828309, 1e-6);
+    EXPECT_NEAR(y.getitem(4409), -0.1250505236945571, 1e-6);
 }
 

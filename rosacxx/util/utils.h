@@ -28,6 +28,17 @@ nc::NDArrayPtr<DType> pad_center_1d(const nc::NDArrayPtr<DType>& __data, const i
     return padded_data;
 }
 
+template <typename DType>
+nc::NDArrayBoolPtr localmax(const nc::NDArrayPtr<DType>& __data, const int& __axis=0) {
+    auto shape = __data.shape();
+    nc::NDArrayBoolPtr ret = nc::NDArrayBoolPtr(new nc::NDArrayBool(shape));
+    if (shape.size() == 1) {
+        // 1D
+
+    }
+    return ret;
+}
+
 } // namespace rosacxx
 } // namespace utils
 

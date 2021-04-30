@@ -41,6 +41,8 @@ set(
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/filters.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/util/utils.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/util/utils.cc
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/audio.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/audio.cc
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/constantq.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/constantq.cc
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/convert.h

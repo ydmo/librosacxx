@@ -4,6 +4,7 @@ import librosa
 from librosa.core.spectrum import _spectrogram
 from librosa.core import convert
 from librosa import util
+import base64 as b64
 
 def piptrack(
     y=None,
@@ -90,8 +91,11 @@ def piptrack(
 
 
 def test_piptrack(freq = 440, n_fft = 1024):
+    
+    # import base64 as b64
+    # b64.b64encode(inp.tobytes()).decode('utf-8')
 
-    y = librosa.tone(freq, sr=22050, duration=0.2)
+    y = librosa.tone(freq, sr=22050, duration=0.2).astype(np.float)
     S = np.abs(librosa.stft(y, n_fft=n_fft, center=False))
 
     pitches, mags = piptrack(S=S, fmin=100)

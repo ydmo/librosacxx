@@ -1,11 +1,11 @@
 #ifndef NUMCXX_H
 #define NUMCXX_H
 
-#include "ndarray.h"
-#include "pad.h"
-
 #include <rosacxx/half/half.h>
 #include <rosacxx/complex/complex.h>
+
+#include <rosacxx/numcxx/ndarray.h>
+#include <rosacxx/numcxx/pad.h>
 
 namespace nc {
 
@@ -202,6 +202,47 @@ NDArrayPtr<bool> operator <= (const LType& lhs, const NDArrayPtr<RType>& rhs) {
 template<typename DType>
 inline NDArrayPtr<DType> zeros_like(const NDArrayPtr<DType>& __arr) {
     return NDArrayPtr<DType>(new NDArray<DType>(__arr.shape()));
+}
+
+template<typename DType>
+inline NDArrayBoolPtr localmax(const NDArrayPtr<DType>& __arr, const int& __axis) {
+    auto iarr_shape = __arr.shape();
+    auto iarr_strides = __arr.strides();
+
+    NDArrayBoolPtr ret = NDArrayBoolPtr(new NDArrayBool(iarr_shape));
+    bool * p_ret = ret.data();
+
+    for (auto i = 0; i < ret.elemCount(); i++) {
+        std::vector<int> coor_c = _get_coor_s32(i, iarr_strides);
+        int s = coor_c[__axis];
+        int l = std::max(s - 1, 0);
+        int r = std::min(s + 1, iarr_shape[__axis] - 1);
+        std::vector<int> coor_l = coor_c; coor_l[__axis] = l;
+        std::vector<int> coor_r = coor_c; coor_r[__axis] = r;
+        DType val_c = __arr.getitem(coor_c);
+        DType val_l = __arr.getitem(coor_l);
+        DType val_r = __arr.getitem(coor_r);
+        p_ret[i] = (val_c > val_l) && (val_c >= val_r);
+    }
+
+    return ret;
+}
+
+template<typename DType>
+inline NDArrayS32Ptr argwhere(const NDArrayPtr<DType>& __arr) {
+    std::vector<std::vector<int>> coors(0);
+
+    auto iarr_shape = __arr.shape();
+    auto iarr_strides = __arr.strides();
+
+    for (auto i = 0; i < __arr.elemCount(); i++) {
+        std::vector<int> coor = _get_coor_s32(i, iarr_strides);
+        if (__arr.getitem(coor)) {
+            coors.push_back(coor);
+        }
+    }
+
+    return NDArrayS32Ptr::FromVec2D(coors);
 }
 
 } // namepace nc

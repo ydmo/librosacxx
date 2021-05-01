@@ -1,7 +1,8 @@
 #ifndef NUMCXX_NDARRAY_H
 #define NUMCXX_NDARRAY_H
 
-#include "alignmalloc.h"
+#include <rosacxx/numcxx/alignmalloc.h>
+#include <rosacxx/numcxx/utils.h>
 #include <rosacxx/half/half.h>
 
 namespace nc {
@@ -111,6 +112,66 @@ public:
     using std::shared_ptr<elem_type>::shared_ptr;
     using std::shared_ptr<elem_type>::operator*;
     using std::shared_ptr<elem_type>::get;
+
+public: // static methods ......
+
+    static NDArrayPtr FromScalar(const DType& __scalar) {
+        return NDArrayPtr(new NDArray<DType>({1}, __scalar));
+    }
+
+    static NDArrayPtr FromVec1D(const std::vector<DType>& __vec) {
+        if (__vec.size() == 0) {
+            throw std::runtime_error("Invaild shape at dimension 0");
+        }
+        auto p = NDArrayPtr(new NDArray<DType>({int(__vec.size())}));
+        memcpy(p->_data, __vec.data(), __vec.size() * sizeof (DType));
+        return p;
+    }
+
+    static NDArrayPtr FromVec2D(const std::vector<std::vector<DType>>& __vec2d) {
+        if (__vec2d.size() == 0) {
+            throw std::runtime_error("Invaild shape at dimension 0");
+        }
+        if (__vec2d[0].size() == 0) {
+            throw std::runtime_error("Invaild shape at dimension 1");
+        }
+        for (auto i = 1; i < __vec2d.size(); i++) {
+            if (__vec2d[0].size() != __vec2d[i].size()) {
+                throw std::runtime_error("Invaild input shape.");
+            }
+        }
+        auto p = NDArrayPtr(new NDArray<DType>({int(__vec2d.size()), int(__vec2d[0].size())}));
+        auto ptr_p = p->_data;
+        for (auto i = 0; i < p->_shape[0]; i++) {
+            for (auto j = 0; j < p->_shape[1]; j++) {
+                ptr_p[i * p->_shape[1] + j] = __vec2d[i][j];
+            }
+        }
+        return p;
+    }
+
+    static NDArrayPtr FromVec3D(const std::vector<std::vector<std::vector<DType>>>& __vec3d) {
+        auto p = NDArrayPtr(new NDArray<DType>({int(__vec3d.size()), int(__vec3d[0].size()), int(__vec3d[0][0].size()), }));
+        auto ptr_p = p->_data;
+        for (auto i = 0; i < p->_shape[0]; i++) {
+            for (auto j = 0; j < p->_shape[1]; j++) {
+                for (auto k = 0; k < p->_shape[2]; k++) {
+                    ptr_p[i * p->_strides[0] + j * p->_strides[1] + k] = __vec3d[i][j][k];
+                }
+            }
+        }
+        return p;
+    }
+
+public: // dynamic methods .....
+
+    inline NDArrayPtr clone() const {
+        auto _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto sptr_clone = NDArrayPtr(new NDArray<DType>(_shape));
+        memcpy(sptr_clone->_data, _data, bytesCount());
+        return sptr_clone;
+    }
 
     int elemCount() const {
         int elemCnt = 1;
@@ -320,106 +381,6 @@ public:
         return _data[s0 * _strides[0] + s1 * _strides[1] + s2 * _strides[2] + s3 * _strides[3] + s4 * _strides[4] + s5 * _strides[5] + s6 * _strides[6] + s7 * _strides[7] + s8 * _strides[8] + s9];
     }
 
-    DType min() const {
-        auto _data = get()->_data;
-        DType min_val = _data[0];
-        for (int i = 0; i < elemCount(); i++) {
-            if (min_val > _data[i]) min_val = _data[i];
-        }
-        return min_val;
-    }
-
-    int argmin() const {
-        auto _data = get()->_data;
-        int   min_idx = 0;
-        DType min_val = _data[0];
-        for (int i = 0; i < elemCount(); i++) {
-            if (min_val > _data[i]) {
-                min_val = _data[i];
-                min_idx = i;
-            }
-        }
-        return min_idx;
-    }
-
-    DType max() const {
-        auto _data = get()->_data;
-        DType max_val = _data[0];
-        for (int i = 0; i < elemCount(); i++) {
-            if (max_val < _data[i]) max_val = _data[i];
-        }
-        return max_val;
-    }
-
-    int argmax() const {
-        auto _data = get()->_data;
-        int   max_idx = 0;
-        DType max_val = _data[0];
-        for (int i = 0; i < elemCount(); i++) {
-            if (max_val < _data[i]) {
-                max_val = _data[i];
-                max_idx = i;
-            }
-        }
-        return max_idx;
-    }
-
-    static NDArrayPtr FromScalar(const DType& __scalar) {
-        return NDArrayPtr(new NDArray<DType>({1}, __scalar));
-    }
-
-    static NDArrayPtr FromVec1D(const std::vector<DType>& __vec) {
-        if (__vec.size() == 0) {
-            throw std::runtime_error("Invaild shape at dimension 0");
-        }
-        auto p = NDArrayPtr(new NDArray<DType>({int(__vec.size())}));
-        memcpy(p->_data, __vec.data(), __vec.size() * sizeof (DType));
-        return p;
-    }
-
-    static NDArrayPtr FromVec2D(const std::vector<std::vector<DType>>& __vec2d) {
-        if (__vec2d.size() == 0) {
-            throw std::runtime_error("Invaild shape at dimension 0");
-        }
-        if (__vec2d[0].size() == 0) {
-            throw std::runtime_error("Invaild shape at dimension 1");
-        }
-        for (auto i = 1; i < __vec2d.size(); i++) {
-            if (__vec2d[0].size() != __vec2d[i].size()) {
-                throw std::runtime_error("Invaild input shape.");
-            }
-        }
-        auto p = NDArrayPtr(new NDArray<DType>({int(__vec2d.size()), int(__vec2d[0].size())}));
-        auto ptr_p = p->_data;
-        for (auto i = 0; i < p->_shape[0]; i++) {
-            for (auto j = 0; j < p->_shape[1]; j++) {
-                ptr_p[i * p->_shape[1] + j] = __vec2d[i][j];
-            }
-        }
-        return p;
-    }
-
-    static NDArrayPtr FromVec3D(const std::vector<std::vector<std::vector<DType>>>& __vec3d) {
-        auto p = NDArrayPtr(new NDArray<DType>({int(__vec3d.size()), int(__vec3d[0].size()), int(__vec3d[0][0].size()), }));
-        auto ptr_p = p->_data;
-        for (auto i = 0; i < p->_shape[0]; i++) {
-            for (auto j = 0; j < p->_shape[1]; j++) {
-                for (auto k = 0; k < p->_shape[2]; k++) {
-                    ptr_p[i * p->_strides[0] + j * p->_strides[1] + k] = __vec3d[i][j][k];
-                }
-            }
-        }
-        return p;
-    }
-
-    inline NDArrayPtr clone() const {
-        auto _data = get()->_data;
-        auto _shape = get()->_shape;
-        auto sptr_clone = NDArrayPtr(new NDArray<DType>(_shape));
-        memcpy(sptr_clone->_data, _data, bytesCount());
-        return sptr_clone;
-    }
-
     NDArrayPtr getitems(const NDArrayPtr<bool>& __mask) const {
         if (__mask.shape().size() > get()->_shape.size()) throw std::runtime_error("Invaild input mask");
         std::vector<DType> vec_res(0);
@@ -436,234 +397,6 @@ public:
             throw std::runtime_error("Not implemented.");
         }
         return nullptr;
-    }
-
-    NDArrayPtr operator [] (const NDArrayPtr<bool>& __mask) const {
-        return getitems(__mask);
-    }
-
-    NDArrayPtr dot(const NDArrayPtr& __other) const {
-        if (get()->_shape.size() == 1 && __other.shape().size() == 1) {
-            if (get()->_shape[0] != get()->_shape[0]) {
-                throw std::runtime_error("invalid shape");
-            }
-            DType sum = 0;
-            for (auto i = 0; i < get()->_shape[0]; i++) {
-                sum += (get()->_data[i] * __other->_data[i]);
-            }
-            auto ptr = NDArrayPtr(new NDArray<DType>({1}, sum));
-            return ptr;
-        }
-        else if (get()->_shape.size() == 2 && __other.shape().size() == 2) {
-
-        }
-        else {
-            throw std::runtime_error("Not implemented error");
-        }
-    }
-
-    NDArrayPtr<int> argmax(int __axis) const {
-        auto _data = get()->_data;
-        auto _shape = get()->_shape;
-        auto _strides = get()->_strides;
-
-        std::vector<int> shape_am;
-        for (int i = 0; i < _shape.size(); i++) {
-            if (i == __axis) continue;
-            shape_am.push_back(i);
-        }
-
-        auto arr_max_val = NDArrayPtr<DType>(new NDArray<DType>(shape_am, min()));
-        auto arr_max_idx = NDArrayPtr<int  >(new NDArray<int  >(shape_am));
-
-        for (auto i = 0; i < elemCount(); i++) {
-
-            std::vector<int> coor(_shape.size());
-            int remainder = i;
-            for(int d = 0; d < _shape.size(); d++) {
-                coor[d] = remainder / _strides[d];
-                remainder -= (coor[d] * _strides[d]);
-                if (d == __axis) {
-                    continue;
-                }
-            }
-
-            DType curr_val = _data[i];
-            int   curr_idx = coor[__axis];
-
-            std::vector<int> am_coor = coor; am_coor.erase(am_coor.begin()+__axis);
-
-            if (arr_max_val.getitem(am_coor) < curr_val) {
-                arr_max_val.at(am_coor)[0] = curr_val;
-                arr_max_idx.at(am_coor)[0] = curr_idx;
-            }
-        }
-
-        return arr_max_idx;
-    }
-
-    NDArrayPtr max(int __axis) const {
-        auto _data = get()->_data;
-        auto _shape = get()->_shape;
-        auto _strides = get()->_strides;
-
-        std::vector<int> shape_am;
-        for (int i = 0; i < _shape.size(); i++) {
-            if (i == __axis) continue;
-            shape_am.push_back(i);
-        }
-
-        auto arr_max_val = NDArrayPtr<DType>(new NDArray<DType>(shape_am, min()));
-        auto arr_max_idx = NDArrayPtr<int  >(new NDArray<int  >(shape_am));
-
-        for (auto i = 0; i < elemCount(); i++) {
-
-            std::vector<int> coor(_shape.size());
-            int remainder = i;
-            for(int d = 0; d < _shape.size(); d++) {
-                coor[d] = remainder / _strides[d];
-                remainder -= (coor[d] * _strides[d]);
-                if (d == __axis) {
-                    continue;
-                }
-            }
-
-            DType curr_val = _data[i];
-            int   curr_idx = coor[__axis];
-
-            std::vector<int> am_coor = coor; am_coor.erase(am_coor.begin()+__axis);
-
-            if (arr_max_val.getitem(am_coor) < curr_val) {
-                arr_max_val.at(am_coor)[0] = curr_val;
-                arr_max_idx.at(am_coor)[0] = curr_idx;
-            }
-        }
-
-        return arr_max_val;
-    }
-
-    NDArrayPtr<int> argmin(int __axis) const {
-        auto _data = get()->_data;
-        auto _shape = get()->_shape;
-        auto _strides = get()->_strides;
-
-        std::vector<int> shape_am;
-        for (int i = 0; i < _shape.size(); i++) {
-            if (i == __axis) continue;
-            shape_am.push_back(i);
-        }
-
-        auto arr_min_val = NDArrayPtr<DType>(new NDArray<DType>(shape_am, max()));
-        auto arr_min_idx = NDArrayPtr<int  >(new NDArray<int  >(shape_am));
-
-        for (auto i = 0; i < elemCount(); i++) {
-
-            std::vector<int> coor(_shape.size());
-            int remainder = i;
-            for(int d = 0; d < _shape.size(); d++) {
-                coor[d] = remainder / _strides[d];
-                remainder -= (coor[d] * _strides[d]);
-                if (d == __axis) {
-                    continue;
-                }
-            }
-
-            DType curr_val = _data[i];
-            int   curr_idx = coor[__axis];
-
-            std::vector<int> am_coor = coor; am_coor.erase(am_coor.begin()+__axis);
-
-            if (arr_min_val.getitem(am_coor) > curr_val) {
-                arr_min_val.at(am_coor)[0] = curr_val;
-                arr_min_idx.at(am_coor)[0] = curr_idx;
-            }
-        }
-
-        return arr_min_idx;
-    }
-
-    NDArrayPtr min(int __axis) const {
-        auto _data = get()->_data;
-        auto _shape = get()->_shape;
-        auto _strides = get()->_strides;
-
-        std::vector<int> shape_am;
-        for (int i = 0; i < _shape.size(); i++) {
-            if (i == __axis) continue;
-            shape_am.push_back(i);
-        }
-
-        auto arr_min_val = NDArrayPtr<DType>(new NDArray<DType>(shape_am, max()));
-        auto arr_min_idx = NDArrayPtr<int  >(new NDArray<int  >(shape_am));
-
-        for (auto i = 0; i < elemCount(); i++) {
-
-            std::vector<int> coor(_shape.size());
-            int remainder = i;
-            for(int d = 0; d < _shape.size(); d++) {
-                coor[d] = remainder / _strides[d];
-                remainder -= (coor[d] * _strides[d]);
-                if (d == __axis) {
-                    continue;
-                }
-            }
-
-            DType curr_val = _data[i];
-            int   curr_idx = coor[__axis];
-
-            std::vector<int> am_coor = coor; am_coor.erase(am_coor.begin()+__axis);
-
-            if (arr_min_val.getitem(am_coor) > curr_val) {
-                arr_min_val.at(am_coor)[0] = curr_val;
-                arr_min_idx.at(am_coor)[0] = curr_idx;
-            }
-        }
-
-        return arr_min_val;
-    }
-
-    NDArrayPtr T() const {
-        auto _shape = get()->_shape;
-        if (_shape.size() != 2) throw std::runtime_error("Only 2D array (Matrix2D) can use T() method.");
-        auto _data = get()->_data;
-        auto _strides = get()->_strides;
-        auto ret = NDArrayPtr<DType>(new NDArray<DType>({_shape[1], _shape[0]}));
-        auto ptr_ret = ret.data();
-        for (auto i = 0; i < _shape[0]; i++) {
-            for (auto j = 0; j < _shape[1]; j++) {
-                ptr_ret[j * _shape[0] + i] = _data[i * _shape[1] + j];
-            }
-        }
-        return ret;
-    }
-
-    NDArrayPtr reshape(const std::vector<int>& __newshape) const {
-        auto _data = get()->_data;
-        auto _shape = get()->_shape;
-        auto _strides = get()->_strides;
-        // ------------------------------------------------------------------
-        std::vector<int> new_shape(__newshape.size());
-        int k = 1;
-        int neg_dim = 0;
-        int neg_cnt = 0;
-        for (auto i = 0; i < __newshape.size(); i++) {
-            if (__newshape[i] > 0) {
-                k *= __newshape[i];
-                new_shape[i] = __newshape[i];
-            } else {
-                neg_dim = i;
-                neg_cnt += 1;
-            }
-        }
-        const int elemCnt = elemCount();
-        if (elemCnt < k || (elemCnt % k) != 0 || neg_cnt > 1) {
-            throw std::invalid_argument("Invalid input new shape.");
-        }
-        if(neg_cnt > 0) {
-            new_shape[neg_dim] = elemCnt / k;
-        }
-        // ------------------------------------------------------------------
-        return NDArrayPtr<DType>(new NDArray<DType>(new_shape, _data));;
     }
 
     template<typename RType>
@@ -708,6 +441,266 @@ public:
         else {
             throw std::runtime_error("Not implemented.");
             return nullptr;
+        }
+    }
+
+    template<typename RType>
+    NDArrayPtr<DType> operator * (const NDArrayPtr<RType>& rhs) const {
+        DType * _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto _strides = get()->_strides;
+        // -------
+        if (_shape == rhs.shape()) { // is elementwise operation
+            auto ret = NDArrayPtr<DType>(new NDArray<DType>(_shape));
+            DType * ptr_ret = ret.data();
+            RType * ptr_rhs = rhs.data();
+            for (auto i = 0; i < elemCount(); i++) {
+                ptr_ret[i] = _data[i] * ptr_rhs[i];
+            }
+            return ret;
+        }
+        else {
+            throw std::runtime_error("Not implemented.");
+
+            std::vector<int> dims0 = _shape;
+            std::vector<int> dims1 = rhs.shape();
+            std::vector<int> dims2 = _get_broadcast_op_shape(_shape, dims1);
+
+            NDArrayPtr<DType> ret = NDArrayPtr<DType>(new NDArray<DType>(dims2));
+
+            int msize = dims2.size();
+
+            // unsqueeze dims0 ...
+            std::vector<int> newDims0(0);
+            for (auto i = 0; i < msize - dims0.size(); i++) {
+                newDims0.push_back(int(1));
+            }
+            for (auto i = 0; i < dims0.size(); i++) {
+                newDims0.push_back(dims0[i]);
+            }
+            dims0 = newDims0;
+
+            // unsqueeze dims1 ...
+            std::vector<int> newDims1(0);
+            for (auto i = 0; i < msize - dims1.size(); i++) {
+                newDims1.push_back(int(1));
+            }
+            for (auto i = 0; i < dims1.size(); i++) {
+                newDims1.push_back(dims1[i]);
+            }
+            dims1 = newDims1;
+
+            std::vector<int> strides0(msize);
+            std::vector<int> strides1(msize);
+            std::vector<int> strides2(msize);
+
+            for (int i = 0; i < msize; i++) {
+                strides0[i] = 1;
+                strides1[i] = 1;
+                strides2[i] = 1;
+                for (int j = i+1; j < msize; j++) {
+                    strides0[i] *= dims0[j];
+                    strides1[i] *= dims1[j];
+                    strides2[i] *= dims2[j];
+                }
+            }
+
+            DType * in0_ptr = _data;
+            RType * in1_ptr = rhs.data();
+            DType * out_ptr = ret.data();
+
+            std::vector<int> coor0(msize);
+            std::vector<int> coor1(msize);
+            std::vector<int> coor2(msize);
+            int remainder = 0, loc0 = 0, loc1 = 0;
+            for (int n = 0; n < ret.elemCount(); ++n) {
+                // cal coor2 --> cal coor0 and coor1 --> cal the loc0 and loc1
+                remainder = n; loc0 = 0; loc1 = 0;
+                for(auto d = 0; d < msize; d++) {
+                    coor2[d] = remainder / strides2[d];
+                    remainder -= (coor2[d] * strides2[d]);
+                    coor0[d] = dims2[d] == dims0[d]? coor2[d] : 0;
+                    coor1[d] = dims2[d] == dims1[d]? coor2[d] : 0;
+                    loc0 += coor0[d] * strides0[d];
+                    loc1 += coor1[d] * strides1[d];
+                }
+                // operator ...
+                out_ptr[n] = in0_ptr[loc0] * in1_ptr[loc1];
+            }
+
+            return ret;
+        }
+    }
+
+    template<typename RType>
+    NDArrayPtr<bool> operator > (const NDArrayPtr<RType>& rhs) const {
+        DType * _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto _strides = get()->_strides;
+        // -------
+        if (_shape == rhs.shape()) { // is elementwise operation
+            auto ret = NDArrayPtr<bool>(new NDArray<bool>(_shape));
+            bool * ptr_ret = ret.data();
+            DType * ptr_rhs = rhs.data();
+            for (auto i = 0; i < elemCount(); i++) {
+                ptr_ret[i] = _data[i] > ptr_rhs[i];
+            }
+            return ret;
+        }
+        else {
+            std::vector<int> dims0 = _shape;
+            std::vector<int> dims1 = rhs.shape();
+            std::vector<int> dims2 = _get_broadcast_op_shape(_shape, dims1);
+
+            NDArrayPtr<bool> ret = NDArrayPtr<bool>(new NDArray<bool>(dims2));
+
+            int msize = dims2.size();
+
+            // unsqueeze dims0 ...
+            std::vector<int> newDims0(0);
+            for (auto i = 0; i < msize - dims0.size(); i++) {
+                newDims0.push_back(int(1));
+            }
+            for (auto i = 0; i < dims0.size(); i++) {
+                newDims0.push_back(dims0[i]);
+            }
+            dims0 = newDims0;
+
+            // unsqueeze dims1 ...
+            std::vector<int> newDims1(0);
+            for (auto i = 0; i < msize - dims1.size(); i++) {
+                newDims1.push_back(int(1));
+            }
+            for (auto i = 0; i < dims1.size(); i++) {
+                newDims1.push_back(dims1[i]);
+            }
+            dims1 = newDims1;
+
+            std::vector<int> strides0(msize);
+            std::vector<int> strides1(msize);
+            std::vector<int> strides2(msize);
+
+            for (int i = 0; i < msize; i++) {
+                strides0[i] = 1;
+                strides1[i] = 1;
+                strides2[i] = 1;
+                for (int j = i+1; j < msize; j++) {
+                    strides0[i] *= dims0[j];
+                    strides1[i] *= dims1[j];
+                    strides2[i] *= dims2[j];
+                }
+            }
+
+            DType * in0_ptr = _data;
+            RType * in1_ptr = rhs.data();
+            bool * out_ptr = ret.data();
+
+            std::vector<int> coor0(msize);
+            std::vector<int> coor1(msize);
+            std::vector<int> coor2(msize);
+            int remainder = 0, loc0 = 0, loc1 = 0;
+            for (int n = 0; n < ret.elemCount(); ++n) {
+                // cal coor2 --> cal coor0 and coor1 --> cal the loc0 and loc1
+                remainder = n; loc0 = 0; loc1 = 0;
+                for(auto d = 0; d < msize; d++) {
+                    coor2[d] = remainder / strides2[d];
+                    remainder -= (coor2[d] * strides2[d]);
+                    coor0[d] = dims2[d] == dims0[d]? coor2[d] : 0;
+                    coor1[d] = dims2[d] == dims1[d]? coor2[d] : 0;
+                    loc0 += coor0[d] * strides0[d];
+                    loc1 += coor1[d] * strides1[d];
+                }
+                // operator ...
+                out_ptr[n] = in0_ptr[loc0] > in1_ptr[loc1];
+            }
+
+            return ret;
+        }
+    }
+
+    template<typename RType>
+    NDArrayPtr<bool> operator < (const NDArrayPtr<RType>& rhs) const {
+        DType * _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto _strides = get()->_strides;
+        // -------
+        if (_shape == rhs.shape()) { // is elementwise operation
+            auto ret = NDArrayPtr<bool>(new NDArray<bool>(_shape));
+            bool * ptr_ret = ret.data();
+            DType * ptr_rhs = rhs.data();
+            for (auto i = 0; i < elemCount(); i++) {
+                ptr_ret[i] = _data[i] < ptr_rhs[i];
+            }
+            return ret;
+        }
+        else {
+            std::vector<int> dims0 = _shape;
+            std::vector<int> dims1 = rhs.shape();
+            std::vector<int> dims2 = _get_broadcast_op_shape(_shape, dims1);
+
+            NDArrayPtr<bool> ret = NDArrayPtr<bool>(new NDArray<bool>(dims2));
+
+            int msize = dims2.size();
+
+            // unsqueeze dims0 ...
+            std::vector<int> newDims0(0);
+            for (auto i = 0; i < msize - dims0.size(); i++) {
+                newDims0.push_back(int(1));
+            }
+            for (auto i = 0; i < dims0.size(); i++) {
+                newDims0.push_back(dims0[i]);
+            }
+            dims0 = newDims0;
+
+            // unsqueeze dims1 ...
+            std::vector<int> newDims1(0);
+            for (auto i = 0; i < msize - dims1.size(); i++) {
+                newDims1.push_back(int(1));
+            }
+            for (auto i = 0; i < dims1.size(); i++) {
+                newDims1.push_back(dims1[i]);
+            }
+            dims1 = newDims1;
+
+            std::vector<int> strides0(msize);
+            std::vector<int> strides1(msize);
+            std::vector<int> strides2(msize);
+
+            for (int i = 0; i < msize; i++) {
+                strides0[i] = 1;
+                strides1[i] = 1;
+                strides2[i] = 1;
+                for (int j = i+1; j < msize; j++) {
+                    strides0[i] *= dims0[j];
+                    strides1[i] *= dims1[j];
+                    strides2[i] *= dims2[j];
+                }
+            }
+
+            DType * in0_ptr = _data;
+            RType * in1_ptr = rhs.data();
+            bool * out_ptr = ret.data();
+
+            std::vector<int> coor0(msize);
+            std::vector<int> coor1(msize);
+            std::vector<int> coor2(msize);
+            int remainder = 0, loc0 = 0, loc1 = 0;
+            for (int n = 0; n < ret.elemCount(); ++n) {
+                // cal coor2 --> cal coor0 and coor1 --> cal the loc0 and loc1
+                remainder = n; loc0 = 0; loc1 = 0;
+                for(auto d = 0; d < msize; d++) {
+                    coor2[d] = remainder / strides2[d];
+                    remainder -= (coor2[d] * strides2[d]);
+                    coor0[d] = dims2[d] == dims0[d]? coor2[d] : 0;
+                    coor1[d] = dims2[d] == dims1[d]? coor2[d] : 0;
+                    loc0 += coor0[d] * strides0[d];
+                    loc1 += coor1[d] * strides1[d];
+                }
+                // operator ...
+                out_ptr[n] = in0_ptr[loc0] < in1_ptr[loc1];
+            }
+
+            return ret;
         }
     }
 
@@ -809,9 +802,10 @@ public:
         for (auto i = 0; i < ret.elemCount(); i++) {
             ptr_ret[i] = (ptr_lhs[i] & ptr_rhs[i]);
         }
+        return ret;
     }
 
-    NDArrayPtr<bool> operator && (const NDArrayPtr<bool>& __rhs) {
+    NDArrayPtr<bool> operator && (const NDArrayPtr<bool>& __rhs) const {
         auto _data = get()->_data;
         auto _shape = get()->_shape;
         auto _strides = get()->_strides;
@@ -823,6 +817,277 @@ public:
         for (auto i = 0; i < ret.elemCount(); i++) {
             ptr_ret[i] = (ptr_lhs[i] && ptr_rhs[i]);
         }
+        return ret;
+    }
+
+    NDArrayPtr operator [] (const NDArrayPtr<bool>& __mask) const {
+        return getitems(__mask);
+    }
+
+    DType min() const {
+        auto _data = get()->_data;
+        DType min_val = _data[0];
+        for (int i = 0; i < elemCount(); i++) {
+            if (min_val > _data[i]) min_val = _data[i];
+        }
+        return min_val;
+    }
+
+    int argmin() const {
+        auto _data = get()->_data;
+        int   min_idx = 0;
+        DType min_val = _data[0];
+        for (int i = 0; i < elemCount(); i++) {
+            if (min_val > _data[i]) {
+                min_val = _data[i];
+                min_idx = i;
+            }
+        }
+        return min_idx;
+    }
+
+    DType max() const {
+        auto _data = get()->_data;
+        DType max_val = _data[0];
+        for (int i = 0; i < elemCount(); i++) {
+            if (max_val < _data[i]) max_val = _data[i];
+        }
+        return max_val;
+    }
+
+    int argmax() const {
+        auto _data = get()->_data;
+        int   max_idx = 0;
+        DType max_val = _data[0];
+        for (int i = 0; i < elemCount(); i++) {
+            if (max_val < _data[i]) {
+                max_val = _data[i];
+                max_idx = i;
+            }
+        }
+        return max_idx;
+    }
+
+    NDArrayPtr dot(const NDArrayPtr& __other) const {
+        if (get()->_shape.size() == 1 && __other.shape().size() == 1) {
+            if (get()->_shape[0] != get()->_shape[0]) {
+                throw std::runtime_error("invalid shape");
+            }
+            DType sum = 0;
+            for (auto i = 0; i < get()->_shape[0]; i++) {
+                sum += (get()->_data[i] * __other->_data[i]);
+            }
+            auto ptr = NDArrayPtr(new NDArray<DType>({1}, sum));
+            return ptr;
+        }
+        else if (get()->_shape.size() == 2 && __other.shape().size() == 2) {
+
+        }
+        else {
+            throw std::runtime_error("Not implemented error");
+        }
+    }
+
+    NDArrayPtr<int> argmax(int __axis) const {
+        auto _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto _strides = get()->_strides;
+
+        std::vector<int> shape_am;
+        for (int i = 0; i < _shape.size(); i++) {
+            if (i == __axis) continue;
+            shape_am.push_back(_shape[i]);
+        }
+
+        auto arr_max_val = NDArrayPtr<DType>(new NDArray<DType>(shape_am, min()));
+        auto arr_max_idx = NDArrayPtr<int  >(new NDArray<int  >(shape_am));
+
+        for (auto i = 0; i < elemCount(); i++) {
+
+//            std::vector<int> coor(_shape.size());
+//            int remainder = i;
+//            for(int d = 0; d < _shape.size(); d++) {
+//                coor[d] = remainder / _strides[d];
+//                remainder -= (coor[d] * _strides[d]);
+//                if (d == __axis) {
+//                    continue;
+//                }
+//            }
+            std::vector<int> coor = _get_coor_s32(i, _strides);
+
+            DType curr_val = _data[i];
+            int   curr_idx = coor[__axis];
+
+            std::vector<int> am_coor = coor; am_coor.erase(am_coor.begin()+__axis);
+
+            if (arr_max_val.getitem(am_coor) < curr_val) {
+                arr_max_val.at(am_coor)[0] = curr_val;
+                arr_max_idx.at(am_coor)[0] = curr_idx;
+            }
+        }
+
+        return arr_max_idx;
+    }
+
+    NDArrayPtr max(int __axis) const {
+        auto _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto _strides = get()->_strides;
+
+        std::vector<int> shape_am;
+        for (int i = 0; i < _shape.size(); i++) {
+            if (i == __axis) continue;
+            shape_am.push_back(_shape[i]);
+        }
+
+        auto arr_max_val = NDArrayPtr<DType>(new NDArray<DType>(shape_am, min()));
+        auto arr_max_idx = NDArrayPtr<int  >(new NDArray<int  >(shape_am));
+
+        for (auto i = 0; i < elemCount(); i++) {
+
+//            std::vector<int> coor(_shape.size());
+//            int remainder = i;
+//            for(int d = 0; d < _shape.size(); d++) {
+//                coor[d] = remainder / _strides[d];
+//                remainder -= (coor[d] * _strides[d]);
+//            }
+            std::vector<int> coor = _get_coor_s32(i, _strides);
+
+            DType curr_val = _data[i];
+            int   curr_idx = coor[__axis];
+
+            std::vector<int> am_coor = coor; am_coor.erase(am_coor.begin()+__axis);
+
+            if (arr_max_val.getitem(am_coor) < curr_val) {
+                arr_max_val.at(am_coor)[0] = curr_val;
+                arr_max_idx.at(am_coor)[0] = curr_idx;
+            }
+        }
+
+        return arr_max_val;
+    }
+
+    NDArrayPtr<int> argmin(int __axis) const {
+        auto _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto _strides = get()->_strides;
+
+        std::vector<int> shape_am;
+        for (int i = 0; i < _shape.size(); i++) {
+            if (i == __axis) continue;
+            shape_am.push_back(_shape[i]);
+        }
+
+        auto arr_min_val = NDArrayPtr<DType>(new NDArray<DType>(shape_am, max()));
+        auto arr_min_idx = NDArrayPtr<int  >(new NDArray<int  >(shape_am));
+
+        for (auto i = 0; i < elemCount(); i++) {
+
+//            std::vector<int> coor(_shape.size());
+//            int remainder = i;
+//            for(int d = 0; d < _shape.size(); d++) {
+//                coor[d] = remainder / _strides[d];
+//                remainder -= (coor[d] * _strides[d]);
+//            }
+            std::vector<int> coor = _get_coor_s32(i, _strides);
+
+            DType curr_val = _data[i];
+            int   curr_idx = coor[__axis];
+
+            std::vector<int> am_coor = coor; am_coor.erase(am_coor.begin()+__axis);
+
+            if (arr_min_val.getitem(am_coor) > curr_val) {
+                arr_min_val.at(am_coor)[0] = curr_val;
+                arr_min_idx.at(am_coor)[0] = curr_idx;
+            }
+        }
+
+        return arr_min_idx;
+    }
+
+    NDArrayPtr min(int __axis) const {
+        auto _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto _strides = get()->_strides;
+
+        std::vector<int> shape_am;
+        for (int i = 0; i < _shape.size(); i++) {
+            if (i == __axis) continue;
+            shape_am.push_back(_shape[i]);
+        }
+
+        auto arr_min_val = NDArrayPtr<DType>(new NDArray<DType>(shape_am, max()));
+        auto arr_min_idx = NDArrayPtr<int  >(new NDArray<int  >(shape_am));
+
+        for (auto i = 0; i < elemCount(); i++) {
+
+//            std::vector<int> coor(_shape.size());
+//            int remainder = i;
+//            for(int d = 0; d < _shape.size(); d++) {
+//                coor[d] = remainder / _strides[d];
+//                remainder -= (coor[d] * _strides[d]);
+//                if (d == __axis) {
+//                    continue;
+//                }
+//            }
+            std::vector<int> coor = _get_coor_s32(i, _strides);
+
+            DType curr_val = _data[i];
+            int   curr_idx = coor[__axis];
+
+            std::vector<int> am_coor = coor; am_coor.erase(am_coor.begin()+__axis);
+
+            if (arr_min_val.getitem(am_coor) > curr_val) {
+                arr_min_val.at(am_coor)[0] = curr_val;
+                arr_min_idx.at(am_coor)[0] = curr_idx;
+            }
+        }
+
+        return arr_min_val;
+    }
+
+    NDArrayPtr T() const {
+        auto _shape = get()->_shape;
+        if (_shape.size() != 2) throw std::runtime_error("Only 2D array (Matrix2D) can use T() method.");
+        auto _data = get()->_data;
+        auto _strides = get()->_strides;
+        auto ret = NDArrayPtr<DType>(new NDArray<DType>({_shape[1], _shape[0]}));
+        auto ptr_ret = ret.data();
+        for (auto i = 0; i < _shape[0]; i++) {
+            for (auto j = 0; j < _shape[1]; j++) {
+                ptr_ret[j * _shape[0] + i] = _data[i * _shape[1] + j];
+            }
+        }
+        return ret;
+    }
+
+    NDArrayPtr reshape(const std::vector<int>& __newshape) const {
+        auto _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto _strides = get()->_strides;
+        // ------------------------------------------------------------------
+        std::vector<int> new_shape(__newshape.size());
+        int k = 1;
+        int neg_dim = 0;
+        int neg_cnt = 0;
+        for (auto i = 0; i < __newshape.size(); i++) {
+            if (__newshape[i] > 0) {
+                k *= __newshape[i];
+                new_shape[i] = __newshape[i];
+            } else {
+                neg_dim = i;
+                neg_cnt += 1;
+            }
+        }
+        const int elemCnt = elemCount();
+        if (elemCnt < k || (elemCnt % k) != 0 || neg_cnt > 1) {
+            throw std::invalid_argument("Invalid input new shape.");
+        }
+        if(neg_cnt > 0) {
+            new_shape[neg_dim] = elemCnt / k;
+        }
+        // ------------------------------------------------------------------
+        return NDArrayPtr<DType>(new NDArray<DType>(new_shape, _data));;
     }
 
     template<typename RType>

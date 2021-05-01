@@ -2,7 +2,7 @@
 #include <rosacxx/core/convert.h>
 #include <rosacxx/core/spectrum.h>
 
-#include <rosacxx/filters.h>
+
 
 #include <memory>
 #include <cmath>
@@ -15,16 +15,16 @@ std::map<const char *, const nc::NDArrayF32Ptr> piptrack(
         const nc::NDArrayF32Ptr& __y,
         const float& __sr,
         nc::NDArrayF32Ptr& __S,
-        const int& __n_fft                      = 2048,
-        const int& __hop_length                 = -1,
-        const float& __fmin                     = 150.0,
-        const float& __fmax                     = 4000.0,
-        const float& __threshold                = 0.1,
-        const int& __win_length                 = -1,
-        const filters::STFTWindowType& __window = filters::STFTWindowType::Hanning,
-        const bool& __center                    = true,
-        const char * __pad_mode                 = "reflect",
-        float * __ref                           = nullptr
+        const int& __n_fft,
+        const int& __hop_length,
+        const float& __fmin,
+        const float& __fmax,
+        const float& __threshold,
+        const int& __win_length,
+        const filters::STFTWindowType& __window,
+        const bool& __center,
+        const char * __pad_mode,
+        float * __ref
         ) {
     float sr = __sr;
     int n_fft = __n_fft;
@@ -58,31 +58,36 @@ std::map<const char *, const nc::NDArrayF32Ptr> piptrack(
 
     auto dskew = .5f * avg * shift; // dskew = 0.5 * avg * shift
 
-    auto pitches = nc::zeros_like(S);
-    auto mags = nc::zeros_like(S);
+
 
     auto freq_mask = ((fmin <= fft_freqs) & (fft_freqs < fmax)).reshape({-1, 1}); // freq_mask = ((fmin <= fft_freqs) & (fft_freqs < fmax)).reshape((-1, 1))
 
-    //# Compute the column-wise local max of S after thresholding
-    //# Find the argmax coordinates
-    //if ref is None:
-    //    ref = np.max
-
-    //if callable(ref):
-    //    ref_value = threshold * ref(S, axis=0)
-    //else:
-    //    ref_value = np.abs(ref)
-
     auto ref_value = __threshold * nc::max(S, 0);
 
-    //idx = np.argwhere(freq_mask & util.localmax(S * (S > ref_value)))
+    auto idx = nc::argwhere(nc::localmax(S * (S > ref_value), 0)); // idx = np.argwhere(freq_mask & util.localmax(S * (S > ref_value)))
+    // std::cout << idx << std::endl;
+
+    auto pitches = nc::zeros_like(S);
+    auto mags = nc::zeros_like(S);
+
     //# Store pitch and magnitude
     //pitches[idx[:, 0], idx[:, 1]] = (
     //    (idx[:, 0] + shift[idx[:, 0], idx[:, 1]]) * float(sr) / n_fft
     //)
     //mags[idx[:, 0], idx[:, 1]] = S[idx[:, 0], idx[:, 1]] + dskew[idx[:, 0], idx[:, 1]]
+    auto ptr_pitches = pitches.data();
+    auto ptr_mags = mags.data();
+    auto ptr_dskew = dskew.data();
+    ptr_S = S.data();
+    ptr_shift = shift.data();
+    auto strides_s = S.strides();
+    for (int i = 0; i < idx.shape()[0]; i++) {
+        int * coor = idx.at(i);
+        int offset = coor[0] * strides_s[0] + coor[1];
+        ptr_pitches[offset] = (coor[0] + ptr_shift[offset]) * sr / n_fft;
+        ptr_mags[offset] = ptr_S[offset] + ptr_dskew[offset];
+    }
 
-    // std::map<const char *, const nc::NDArrayF32Ptr> rets = { {"pitches", pitches}, {"magnitudes", mags} };
     return { {"pitches", pitches}, {"magnitudes", mags} };
 }
 

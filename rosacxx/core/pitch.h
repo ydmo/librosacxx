@@ -2,6 +2,8 @@
 #define ROSACXX_CORE_PITCH_H
 
 #include <rosacxx/numcxx/numcxx.h>
+#include <map>
+#include <rosacxx/filters.h>
 
 namespace rosacxx {
 namespace core {
@@ -28,6 +30,22 @@ float pitch_tuning(
         const nc::NDArrayF32Ptr& frequencies,
         const float& resolution=0.01f,
         const int& bins_per_octave=12
+        );
+
+std::map<const char *, const nc::NDArrayF32Ptr> piptrack(
+        const nc::NDArrayF32Ptr& __y,
+        const float& __sr,
+        nc::NDArrayF32Ptr& __S,
+        const int& __n_fft                      = 2048,
+        const int& __hop_length                 = -1,
+        const float& __fmin                     = 150.0,
+        const float& __fmax                     = 4000.0,
+        const float& __threshold                = 0.1,
+        const int& __win_length                 = -1,
+        const filters::STFTWindowType& __window = filters::STFTWindowType::Hanning,
+        const bool& __center                    = true,
+        const char * __pad_mode                 = "reflect",
+        float * __ref                           = nullptr
         );
 
 } // namespace core

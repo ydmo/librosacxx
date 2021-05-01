@@ -7,6 +7,8 @@
 #include <rosacxx/core/spectrum.h>
 #include <rosacxx/core/audio.h>
 
+#include "tests_rosacxx.h"
+
 class ROSACXXTest : public testing::Test {
 protected:
     virtual void TearDown() override { }
@@ -478,5 +480,42 @@ TEST_F(ROSACXXTest, tone) {
     EXPECT_NEAR(y.getitem(333),  -0.7897618899405409, 1e-6);
     EXPECT_NEAR(y.getitem(1333), -0.5854775612828309, 1e-6);
     EXPECT_NEAR(y.getitem(4409), -0.1250505236945571, 1e-6);
+}
+
+TEST_F(ROSACXXTest, piptrack) {
+
+    const float freq = 440.f;
+    const float sr = 22050.f;
+    const float duration = 0.2;
+    const int n_fft = 1024;
+
+    auto y = rosacxx::core::tone(freq, sr, NULL, &duration);
+
+    if (y) {
+        // check y
+        std::string str_y_gt = Base64Decode(ROSACXXTest_piptrack_y);
+        nc::NDArrayF32Ptr y_gt = nc::NDArrayF32Ptr(new nc::NDArrayF32({4410}, (float *)str_y_gt.data()));
+        for (auto i = 0; i < y_gt.elemCount(); i++) {
+            EXPECT_NEAR(y.getitem(i), y_gt.getitem(i), 1e-6);
+        }
+    }
+
+    auto S = nc::abs(rosacxx::core::stft(y, n_fft, -1, -1, rosacxx::filters::STFTWindowType::Hanning, false));
+    if (S) {
+        std::string str_S_gt = Base64Decode(ROSACXXTest_piptrack_S);
+        nc::NDArrayF32Ptr S_gt = nc::NDArrayF32Ptr(new nc::NDArrayF32({513, 14}, (float *)str_S_gt.data()));
+        int big_err_cnt = 0;
+        for (auto i = 0; i < S_gt.elemCount(); i++) {
+            if (std::abs(S.getitem(i) - S_gt.getitem(i)) > 1e-5 && std::abs(S.getitem(i) - S_gt.getitem(i)) / S_gt.getitem(i) > 1e-3) {
+                big_err_cnt += 1;
+                // EXPECT_NEAR(S.getitem(i),  S_gt.getitem(i), 1e-5);
+                // EXPECT_LE(std::abs(S.getitem(i) - S_gt.getitem(i)) / S_gt.getitem(i), 1e-3);
+                std::cout << "S.getitem(i) = " << S.getitem(i) << ", S_gt.getitem(i) = " << S_gt.getitem(i) << ", Abs Error = " << std::abs(S.getitem(i) - S_gt.getitem(i)) << std::endl;
+            }
+        }
+        EXPECT_LE(float(big_err_cnt) / S_gt.elemCount(), 1e-3);
+    }
+
+    auto pm = rosacxx::core::piptrack(y, sr, S, n_fft, -1, 100.f);
 }
 

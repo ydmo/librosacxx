@@ -1,7 +1,7 @@
 #ifndef NUMCXX_PAD_H
 #define NUMCXX_PAD_H
 
-#include "ndarray.h"
+#include <rosacxx/numcxx/ndarray.h>
 #include <vector>
 
 namespace nc {

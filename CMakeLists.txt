@@ -24,6 +24,7 @@ set(
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/numcxx/alignmalloc.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/numcxx/ndarray.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/numcxx/pad.h
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/numcxx/utils.h
 
     ## FFT Libraries.
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/fft/fft.h
@@ -68,9 +69,11 @@ if (BUILD_ROSACXX_TESTS)
     find_package(GTest REQUIRED)
     add_executable(
         rosacxx_tests
+        ${CMAKE_CURRENT_LIST_DIR}/tests/testshelper.h
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_all.cc
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_fft.cc
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_numcxx.cc
+        ${CMAKE_CURRENT_LIST_DIR}/tests/tests_rosacxx.h
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_rosacxx.cc
         )
     target_link_libraries(rosacxx_tests PUBLIC rosacxx)

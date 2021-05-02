@@ -69,11 +69,10 @@ if (BUILD_ROSACXX_TESTS)
     find_package(GTest REQUIRED)
     add_executable(
         rosacxx_tests
-        ${CMAKE_CURRENT_LIST_DIR}/tests/testshelper.h
+        ${CMAKE_CURRENT_LIST_DIR}/tests/tests_data.h
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_all.cc
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_fft.cc
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_numcxx.cc
-        ${CMAKE_CURRENT_LIST_DIR}/tests/tests_rosacxx.h
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_rosacxx.cc
         )
     target_link_libraries(rosacxx_tests PUBLIC rosacxx)

@@ -80,8 +80,8 @@ def piptrack(
     idx = np.argwhere(freq_mask & util.localmax(S * (S > ref_value)))
 
     # Store pitch and magnitude
-    pitches[idx[:, 0], idx[:, 1]] = (
-        (idx[:, 0] + shift[idx[:, 0], idx[:, 1]]) * float(sr) / n_fft
+    pitches[idx[:, 0], ididx[:, 1]] = (
+        (idx[:, 0] + shift[idx[:, 0], x[:, 1]]) * float(sr) / n_fft
     )
 
     mags[idx[:, 0], idx[:, 1]] = S[idx[:, 0], idx[:, 1]] + dskew[idx[:, 0], idx[:, 1]]

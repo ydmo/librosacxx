@@ -87,39 +87,6 @@ std::vector<nc::NDArrayF32Ptr> piptrack(
     return { pitches, mags };
 }
 
-float estimate_tuning(
-        const nc::NDArrayF32Ptr& y, //  = nullptr,
-        const float& sr, //             = 22050,
-        nc::NDArrayF32Ptr& S, //  = nullptr,
-        const int& n_fft, //            = 2048,
-        const float& resolution, //     = 0.01f,
-        const int& bins_per_octave, //  = 12,
-        const int& hop_length, //       = -1,
-        const float& fmin, //           = 150.0,
-        const float& fmax, //           = 4000.0,
-        const float& threshold, //      = 0.1,
-        const int& win_length, //       = -1,
-        const filters::STFTWindowType& window, //         = "hann",
-        const bool& center, //          = true,
-        const char * pad_mode, //       = "reflect",
-        float * ref //                  = nullptr
-        ) {
-
-    auto pitch_mag = piptrack(y, sr, S, n_fft, hop_length, fmin, fmax, threshold, win_length, window, center, pad_mode, ref); // pitch, mag = piptrack(y=y, sr=sr, S=S, n_fft=n_fft, **kwargs)
-    nc::NDArrayF32Ptr pitch = pitch_mag[0];
-    nc::NDArrayF32Ptr mag = pitch_mag[1];
-
-    nc::NDArrayBoolPtr pitch_mask = pitch > 0;
-
-    float mag_threshold = 0.f;
-    if (pitch_mask != nullptr) {
-        mag_threshold = nc::median(mag[pitch_mask]);
-    }
-
-    nc::NDArrayF32Ptr frequencies = pitch[(mag > mag_threshold) && pitch_mask];
-
-    return pitch_tuning(frequencies, resolution, bins_per_octave);
-}
 
 float pitch_tuning(
         const nc::NDArrayF32Ptr& frequencies,
@@ -163,6 +130,40 @@ float pitch_tuning(
     auto bins = nc::linspace<float>(-0.5f, 0.5f, int(std::ceil(1.0 / resolution)) + 1);
     auto counts = nc::histogram(residual, bins);
     return bins.getitem(counts.argmax());
+}
+
+float estimate_tuning(
+        const nc::NDArrayF32Ptr& y, //  = nullptr,
+        const float& sr, //             = 22050,
+        nc::NDArrayF32Ptr& S, //  = nullptr,
+        const int& n_fft, //            = 2048,
+        const float& resolution, //     = 0.01f,
+        const int& bins_per_octave, //  = 12,
+        const int& hop_length, //       = -1,
+        const float& fmin, //           = 150.0,
+        const float& fmax, //           = 4000.0,
+        const float& threshold, //      = 0.1,
+        const int& win_length, //       = -1,
+        const filters::STFTWindowType& window, //         = "hann",
+        const bool& center, //          = true,
+        const char * pad_mode, //       = "reflect",
+        float * ref //                  = nullptr
+        ) {
+
+    auto pitch_mag = piptrack(y, sr, S, n_fft, hop_length, fmin, fmax, threshold, win_length, window, center, pad_mode, ref); // pitch, mag = piptrack(y=y, sr=sr, S=S, n_fft=n_fft, **kwargs)
+    nc::NDArrayF32Ptr pitch = pitch_mag[0];
+    nc::NDArrayF32Ptr mag = pitch_mag[1];
+
+    nc::NDArrayBoolPtr pitch_mask = pitch > 0;
+
+    float mag_threshold = 0.f;
+    if (pitch_mask != nullptr) {
+        mag_threshold = nc::median(mag[pitch_mask]);
+    }
+
+    nc::NDArrayF32Ptr frequencies = pitch[(mag > mag_threshold) && pitch_mask];
+
+    return pitch_tuning(frequencies, resolution, bins_per_octave);
 }
 
 

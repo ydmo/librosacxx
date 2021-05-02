@@ -7,7 +7,7 @@
 #include <rosacxx/core/spectrum.h>
 #include <rosacxx/core/audio.h>
 
-#include "tests_rosacxx.h"
+#include "tests_data.h"
 
 class ROSACXXTest : public testing::Test {
 protected:
@@ -696,3 +696,30 @@ TEST_F(ROSACXXTest, piptrack) {
     }
 }
 
+TEST_F(ROSACXXTest, estimate_tuning) {
+    const int                   p_bins_per_octave = 12;
+    const float                 p_resolution = 1e-2;
+    const std::vector<float>    p_center_note = { 69, 84, 108 };
+    const std::vector<float>    p_tuning = { -0.5, -0.3, -0.1,  0.1,  0.3 };
+    const std::vector<float>    p_sr = { 11025, 22050 };
+    for (auto center_note : p_center_note) {
+        for (auto tuning : p_tuning) {
+            for (auto sr : p_sr) {
+                float duration = 0.5;
+                auto target_hz = rosacxx::core::midi_to_hz(center_note + tuning);
+                auto y = rosacxx::core::tone(target_hz, sr, NULL, &duration);
+                nc::NDArrayF32Ptr S = nullptr;
+                float fmin = rosacxx::core::note_to_hz("C4 (middle C)"); // 261.6255653005986
+                float fmax = rosacxx::core::note_to_hz("G#9/Ab9"); // 13289.750322558246
+                float tuning_est = rosacxx::core::estimate_tuning(y, sr, S, 2048, p_resolution, p_bins_per_octave, -1, fmin, fmax);
+                int decimals = -log10(p_resolution);
+                float deviation = std::round((tuning - tuning_est) * pow(10, decimals)) / pow(10, decimals);
+                float dev = std::min(
+                             deviation - int( deviation),
+                            -deviation - int(-deviation)
+                            );
+                EXPECT_LE(dev, 3 * p_resolution);
+            }
+        }
+    }
+}

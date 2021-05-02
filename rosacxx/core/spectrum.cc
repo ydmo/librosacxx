@@ -190,6 +190,7 @@ void _spectrogram(
                 ptr_S[i] = std::pow(std::sqrt( ptr_tmp[i].r * ptr_tmp[i].r + ptr_tmp[i].i * ptr_tmp[i].i ), __power);
             }
         }
+        __S = S;
     }
 }
 

@@ -32,7 +32,7 @@ float pitch_tuning(
         const int& bins_per_octave=12
         );
 
-std::map<const char *, const nc::NDArrayF32Ptr> piptrack(
+std::vector<nc::NDArrayF32Ptr> piptrack(
         const nc::NDArrayF32Ptr& __y,
         const float& __sr,
         nc::NDArrayF32Ptr& __S,

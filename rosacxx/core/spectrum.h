@@ -19,6 +19,16 @@ nc::NDArrayPtr<complex::Complex<float>> stft(
         const char *                    pad_mode = "reflect"
     );
 
+nc::NDArrayPtr<complex::Complex<double>> stft(
+        const nc::NDArrayF64Ptr&        y,
+        const int&                      n_fft = 2048,
+        const int&                      hop_length = -1,
+        const int&                      win_length = -1,
+        const filters::STFTWindowType&  window = filters::STFTWindowType::Hanning,
+        const bool&                     center = true,
+        const char *                    pad_mode = "reflect"
+    );
+
 void _spectrogram(
         const nc::NDArrayF32Ptr&        y,
         nc::NDArrayF32Ptr&              S,

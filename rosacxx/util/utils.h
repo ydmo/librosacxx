@@ -17,10 +17,10 @@ nc::NDArrayPtr<DType> pad_center_1d(const nc::NDArrayPtr<DType>& __data, const i
     int lpad = (size - n) / 2;
     int rpad = size - n - lpad;
 
-    nc::NDArrayF32Ptr padded_data = nc::NDArrayF32Ptr(new nc::NDArrayF32({n+lpad+rpad}));
+    nc::NDArrayPtr<DType> padded_data = nc::NDArrayPtr<DType>(new nc::NDArray<DType>({n+lpad+rpad}));
 
-    float * ptr_window = __data.data();
-    float * ptr_padded_window = padded_data.data();
+    auto ptr_window = __data.data();
+    auto ptr_padded_window = padded_data.data();
     for (auto i = 0; i < n; i++) {
         ptr_padded_window[lpad+i] = ptr_window[i];
     }

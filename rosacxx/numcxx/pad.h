@@ -25,17 +25,12 @@ NDArrayPtr<DType> pad(const NDArrayPtr<DType>& __array, const std::vector<std::p
     DType *ptr_ret = ret.data();
     DType *ptr_src = __array.data();
     for (auto i = 0; i < __array.elemCount(); i++) {
-        std::vector<int> oldcoor(dims);
-        int remainder = i;
-        for(int d = 0; d < dims; d++) {
-            oldcoor[d] = remainder / oldstrides[d];
-            remainder -= (oldcoor[d] * oldstrides[d]);
-        }
-        int new_loc = 1;
+        std::vector<int> oldcoor = _get_coor_s32(i, oldstrides);
+        int new_loc = 0;
         std::vector<int> newcoor = oldcoor;
         for (auto d = 0; d < dims; d++) {
             newcoor[d] += __pad_width[d].first;
-            new_loc *= (newcoor[d] + newstrides[d]);
+            new_loc += (newcoor[d] * newstrides[d]);
         }
         ptr_ret[new_loc] = ptr_src[i];
     }

@@ -11,7 +11,7 @@
 namespace rosacxx {
 namespace core {
 
-std::map<const char *, const nc::NDArrayF32Ptr> piptrack(
+std::vector<nc::NDArrayF32Ptr> piptrack(
         const nc::NDArrayF32Ptr& __y,
         const float& __sr,
         nc::NDArrayF32Ptr& __S,
@@ -43,11 +43,10 @@ std::map<const char *, const nc::NDArrayF32Ptr> piptrack(
     nc::NDArrayF32Ptr shift = nc::NDArrayF32Ptr(new nc::NDArrayF32({shapeS[0]-2, shapeS[1]}));
     float * ptr_avg = avg.data();
     float * ptr_shift = shift.data();
-    float * ptr_S = S.data();
     for (auto i = 0; i < shapeS[0]-2; i++) {
         for (auto j = 0; j < shapeS[1]; j++) {
-            *ptr_avg++ = (ptr_S[(i + 2) * shapeS[1] + j] - ptr_S[i * shapeS[1] + j]) * 0.5f; // avg = 0.5 * (S[2:] - S[:-2])
-            *ptr_shift++ = 2 * ptr_S[(i + 1) * shapeS[1] + j] - ptr_S[(i + 2) * shapeS[1] + j] - ptr_S[i * shapeS[1] + j];// shift = 2 * S[1:-1] - S[2:] - S[:-2]
+            *ptr_avg++ = 0.5 * (S.getitem(i+2, j) - S.getitem(i, j)); // *ptr_avg++ = (ptr_S[(i + 2) * shapeS[1] + j] - ptr_S[i * shapeS[1] + j]) * 0.5f; // avg = 0.5 * (S[2:] - S[:-2])
+            *ptr_shift++ = 2.0 * S.getitem(i+1, j) - S.getitem(i+2, j) - S.getitem(i, j); // *ptr_shift++ = 2 * ptr_S[(i + 1) * shapeS[1] + j] - ptr_S[(i + 2) * shapeS[1] + j] - ptr_S[i * shapeS[1] + j];// shift = 2 * S[1:-1] - S[2:] - S[:-2]
         }
     }
 
@@ -58,14 +57,11 @@ std::map<const char *, const nc::NDArrayF32Ptr> piptrack(
 
     auto dskew = .5f * avg * shift; // dskew = 0.5 * avg * shift
 
-
-
     auto freq_mask = ((fmin <= fft_freqs) & (fft_freqs < fmax)).reshape({-1, 1}); // freq_mask = ((fmin <= fft_freqs) & (fft_freqs < fmax)).reshape((-1, 1))
 
     auto ref_value = __threshold * nc::max(S, 0);
 
     auto idx = nc::argwhere(nc::localmax(S * (S > ref_value), 0)); // idx = np.argwhere(freq_mask & util.localmax(S * (S > ref_value)))
-    // std::cout << idx << std::endl;
 
     auto pitches = nc::zeros_like(S);
     auto mags = nc::zeros_like(S);
@@ -75,20 +71,20 @@ std::map<const char *, const nc::NDArrayF32Ptr> piptrack(
     //    (idx[:, 0] + shift[idx[:, 0], idx[:, 1]]) * float(sr) / n_fft
     //)
     //mags[idx[:, 0], idx[:, 1]] = S[idx[:, 0], idx[:, 1]] + dskew[idx[:, 0], idx[:, 1]]
-    auto ptr_pitches = pitches.data();
-    auto ptr_mags = mags.data();
-    auto ptr_dskew = dskew.data();
-    ptr_S = S.data();
-    ptr_shift = shift.data();
+    auto p_pitches = pitches.data();
+    auto p_mags = mags.data();
+    auto p_dskew = dskew.data();
+    auto p_S = S.data();
+    auto p_shift = shift.data();
     auto strides_s = S.strides();
     for (int i = 0; i < idx.shape()[0]; i++) {
-        int * coor = idx.at(i);
+        int * coor = idx.at(i, 0);
         int offset = coor[0] * strides_s[0] + coor[1];
-        ptr_pitches[offset] = (coor[0] + ptr_shift[offset]) * sr / n_fft;
-        ptr_mags[offset] = ptr_S[offset] + ptr_dskew[offset];
+        p_pitches[offset] = (coor[0] + p_shift[offset]) * sr / n_fft;
+        p_mags[offset] = p_S[offset] + p_dskew[offset];
     }
 
-    return { {"pitches", pitches}, {"magnitudes", mags} };
+    return { pitches, mags };
 }
 
 float estimate_tuning(
@@ -110,8 +106,8 @@ float estimate_tuning(
         ) {
 
     auto pitch_mag = piptrack(y, sr, S, n_fft, hop_length, fmin, fmax, threshold, win_length, window, center, pad_mode, ref); // pitch, mag = piptrack(y=y, sr=sr, S=S, n_fft=n_fft, **kwargs)
-    nc::NDArrayF32Ptr pitch = pitch_mag["pitch"];
-    nc::NDArrayF32Ptr mag = pitch_mag["magnitudes"];
+    nc::NDArrayF32Ptr pitch = pitch_mag[0];
+    nc::NDArrayF32Ptr mag = pitch_mag[1];
 
     nc::NDArrayBoolPtr pitch_mask = pitch > 0;
 

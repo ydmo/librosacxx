@@ -61,8 +61,8 @@ def piptrack(
     dskew = 0.5 * avg * shift
 
     # Pre-allocate output
-    pitches = np.zeros_like(S)
-    mags = np.zeros_like(S)
+    pitches = np.zeros_like(S).astype(np.float32)
+    mags = np.zeros_like(S).astype(np.float32)
 
     # Clip to the viable frequency range
     freq_mask = ((fmin <= fft_freqs) & (fft_freqs < fmax)).reshape((-1, 1))
@@ -77,7 +77,6 @@ def piptrack(
     else:
         ref_value = np.abs(ref)
 
-    import pdb; pdb.set_trace()
     idx = np.argwhere(freq_mask & util.localmax(S * (S > ref_value)))
 
     # Store pitch and magnitude
@@ -95,10 +94,12 @@ def test_piptrack(freq = 440, n_fft = 1024):
     # import base64 as b64
     # b64.b64encode(inp.tobytes()).decode('utf-8')
 
-    y = librosa.tone(freq, sr=22050, duration=0.2).astype(np.float)
+    y = librosa.tone(freq, sr=22050, duration=0.2).astype(np.float32)
     S = np.abs(librosa.stft(y, n_fft=n_fft, center=False))
 
     pitches, mags = piptrack(S=S, fmin=100)
+    print(b64.b64encode(pitches.astype(np.float32).tobytes()).decode('utf-8'))
+    print(b64.b64encode(mags.astype(np.float32).tobytes()).decode('utf-8'))
 
     idx = mags > 0
 

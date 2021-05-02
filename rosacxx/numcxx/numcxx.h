@@ -7,6 +7,8 @@
 #include <rosacxx/numcxx/ndarray.h>
 #include <rosacxx/numcxx/pad.h>
 
+#include <iomanip>
+
 namespace nc {
 
 template<typename DType>
@@ -21,7 +23,7 @@ inline std::ostream &operator << (std::ostream &__os, const NDArrayPtr<DType>& _
         __os << __arr.shape()[0] << " ) = ";
         __os << "[ ";
         for (auto i = 0; i < __arr.elemCount(); i++) {
-            __os << ptr[i] << ", ";
+            __os << std::setprecision(8) << ptr[i] << ", ";
         }
         __os << "]";
     }
@@ -31,7 +33,7 @@ inline std::ostream &operator << (std::ostream &__os, const NDArrayPtr<DType>& _
         for (auto s0 = 0; s0 < __arr.shape()[0]; s0++) {
             __os << "\t[ ";
             for (auto s1 = 0; s1 < __arr.shape()[1]; s1++) {
-                __os << ptr[s0 * __arr.shape()[1] + s1] << ", ";
+                __os << std::setprecision(8) << ptr[s0 * __arr.shape()[1] + s1] << ", ";
             }
             __os << "], " << std::endl;
         }

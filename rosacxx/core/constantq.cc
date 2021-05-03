@@ -32,11 +32,51 @@ inline int __early_downsample_count(const float& nyquist, const float& filter_cu
 
 /// __early_downsample
 /// Perform early downsampling on an audio signal, if it applies.
-inline void __early_downsample(nc::NDArrayF32Ptr& y, int& sr, int& hop_length, const char * res_type, const int& n_octaves, const float& nyquist, const float& filter_cutoff, const float& scale) {
+inline void __early_downsample(
+        nc::NDArrayF32Ptr& y,
+        float& sr,
+        int& hop_length,
+        const char * res_type,
+        const int& n_octaves,
+        const float& nyquist,
+        const float& filter_cutoff,
+        const float& scale
+        ) {
     int downsample_count = __early_downsample_count(nyquist, filter_cutoff, hop_length, n_octaves);
     if (downsample_count > 0 && strcmp(res_type, "kaiser_fast") == 0) {
         auto downsample_factor = std::pow(2, downsample_count);
+        auto new_hop_length = hop_length / downsample_factor;
+        if (y.elemCount() < downsample_factor) throw std::invalid_argument("Input signal is too short to for CQT.");
+        float new_sr = sr / float(downsample_factor);
+        nc::NDArrayF32Ptr new_y = resample(y, sr, new_sr, res_type, true);
+        if (scale == INFINITY) {
+            new_y = new_y * std::sqrt(downsample_factor);
+        }
+        // re-write input arguments ...
+        y = new_y;
+        sr = new_sr;
+        hop_length = new_hop_length;
     }
+}
+
+struct __cqt_filter_fft_return {
+
+};
+
+__cqt_filter_fft_return __cqt_filter_fft(
+        const float& sr,
+        const float& fmin,
+        const int& n_bins,
+        const int& bins_per_octave,
+        const float& filter_scale,
+        const float& norm,
+        const float& sparsity,
+        const int& hop_length=-1,
+        const filters::STFTWindowType& window = filters::STFTWindowType::Hanning,
+        const float& gamma=0.0
+        ) {
+    __cqt_filter_fft_return ret;
+    return ret;
 }
 
 nc::NDArrayF32Ptr vqt(
@@ -65,6 +105,7 @@ nc::NDArrayF32Ptr vqt(
     float filter_scale = __filter_scale;
     filters::STFTWindowType window = __window;
     std::string res_type = __res_type;
+    bool scale = __scale;
 
     int n_octaves = int(std::ceil(float(n_bins) / bins_per_octave));
     int n_filters = std::min(bins_per_octave, n_bins);
@@ -110,7 +151,13 @@ nc::NDArrayF32Ptr vqt(
         }
     }
 
-    // y, sr, hop_length = __early_downsample(y, sr, hop_length, res_type, n_octaves, nyquist, filter_cutoff, scale);
+    __early_downsample(y, sr, hop_length, res_type.c_str(), n_octaves, nyquist, filter_cutoff, scale);
+
+    // Skip this block for now
+    if (auto_resample && strcmp(res_type.c_str(), "kaiser_fast") != 0) {
+        // Do the top octave before resampling to allow for fast resampling
+
+    }
 
     return nullptr;
 }

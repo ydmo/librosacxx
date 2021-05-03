@@ -1,4 +1,5 @@
 #include <rosacxx/core/audio.h>
+#include <rosacxx/resamcxx/core.h>
 
 namespace rosacxx {
 namespace core {
@@ -13,6 +14,10 @@ nc::NDArrayF32Ptr tone(const float& __freq, const float& __sr, const int * __len
         p_ret[i] = std::cos(2 * M_PI * __freq * i / __sr + phi);
     }
     return ret;
+}
+
+nc::NDArrayF32Ptr resample(const nc::NDArrayF32Ptr& y, const float& origin_sr, const float& target_sr, const char * res_type, const bool& scale) {
+    return nullptr;
 }
 
 } // namespace core

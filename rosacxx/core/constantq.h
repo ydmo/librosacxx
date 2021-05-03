@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include <rosacxx/numcxx/numcxx.h>
+#include <rosacxx/core/pitch.h>
 
 namespace rosacxx {
 namespace core {
@@ -30,21 +31,21 @@ namespace core {
 /// Returns                 | Type          | Note
 /// @result CQT             | NDArrayF32::Ptr | Constant-Q value each frequency at each time.
 nc::NDArrayF32Ptr cqt(
-        const nc::NDArrayF32Ptr& y = nullptr,
-        const float sr = 22050,
-        const int hop_length = 512,
-        const float fmin = 0,
-        const int n_bins = 84,
-        const int bins_per_octave = 12,
-        const float tuning = 0.0,
-        const float filter_scale = 1,
-        const float norm = 1,
-        const float sparsity = 0.01f,
-        const char * window = "hann",
-        const bool scale = true,
-        const char * pad_mode = "reflect",
-        const char * res_type = "",
-        const char * dtype = ""
+        const nc::NDArrayF32Ptr&        __y = nullptr,
+        const float&                    __sr = 22050,
+        const int&                      __hop_length = 512,
+        const float&                    __fmin = 0,
+        const int&                      __n_bins = 84,
+        const int&                      __bins_per_octave = 12,
+        const float&                    __tuning = 0.0,
+        const float&                    __filter_scale = 1,
+        const float&                    __norm = 1,
+        const float&                    __sparsity = 1e-2,
+        const filters::STFTWindowType&  __window  = filters::STFTWindowType::Hanning,
+        const bool                      __scale = true,
+        const char *                    __pad_mode = "reflect",
+        const char *                    __res_type = "",
+        const char *                    __dtype = ""
         );
 
 /// Function: hybrid_cqt

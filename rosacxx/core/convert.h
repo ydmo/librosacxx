@@ -22,6 +22,8 @@ nc::NDArrayF32Ptr midi_to_hz(const nc::NDArrayS32Ptr& midi);
 
 nc::NDArrayF32Ptr fft_frequencies(const float& sr=22050, const int& n_fft=2048);
 
+nc::NDArrayF32Ptr cqt_frequencies(const int& __n_bins, const float& __fmin, const int& __bins_per_octave=12, const float& __tuning=0.f);
+
 } // namespace core
 } // namespace rosacxx
 

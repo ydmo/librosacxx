@@ -17,6 +17,14 @@ nc::NDArrayF32Ptr tone(const float& __freq, const float& __sr, const int * __len
 }
 
 nc::NDArrayF32Ptr resample(const nc::NDArrayF32Ptr& y, const float& origin_sr, const float& target_sr, const char * res_type, const bool& scale) {
+    float ratio = float(target_sr) / origin_sr;
+    int n_samples = int(std::ceil(y.shape().back() * ratio));
+    if (strcmp(res_type, "kaiser_fast") == 0 || strcmp(res_type, "kaiser_best") == 0) {
+        return resam::resample(y, origin_sr, target_sr, -1, res_type);
+    }
+    else {
+        throw std::runtime_error("Not implemented.");
+    }
     return nullptr;
 }
 

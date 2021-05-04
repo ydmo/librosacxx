@@ -723,3 +723,8 @@ TEST_F(ROSACXXTest, estimate_tuning) {
         }
     }
 }
+
+
+TEST_F(ROSACXXTest, resample) {
+
+}

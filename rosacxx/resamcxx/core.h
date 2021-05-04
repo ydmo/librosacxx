@@ -58,15 +58,15 @@ inline nc::NDArrayPtr<DType> resample(
     }
 
     if (x.dims() == 1) {
-        auto x_2d = x.reshape(-1, 1);
-        auto y_2d = y.reshape(-1, 1);
+        auto x_2d = x.reshape({-1, 1});
+        auto y_2d = y.reshape({-1, 1});
         resample_f(x_2d, y_2d, sample_ratio, interp_win, interp_delta, precision);
-        return y_2d.reshape(-1);
+        return y_2d.reshape({-1});
     }
     else if (x.dims() == 2) {
         if (axis == 0) {
-            auto x_2d = x.reshape(x.shape()[0], -1);
-            auto y_2d = y.reshape(y.shape()[0], -1);
+            auto x_2d = x.reshape({x.shape()[0], -1});
+            auto y_2d = y.reshape({y.shape()[0], -1});
             resample_f(x_2d, y_2d, sample_ratio, interp_win, interp_delta, precision);
             return y_2d;
         }

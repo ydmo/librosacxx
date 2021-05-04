@@ -2,6 +2,7 @@
 #define TESTS_ROSACXX_H
 
 #include <string>
+#include "tests_data_resample_src.h"
 
 inline bool is_base64(unsigned char c) {
         return (isalnum(c) || (c == '+') || (c == '/'));

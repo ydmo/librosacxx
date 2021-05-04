@@ -65,23 +65,19 @@ get_filter_ret<DType> get_filter(
 
     }
     else if (strcmp(filter, "kaiser_fast") == 0) {
-        std::string data = Base64Decode(filter_kaiser_fast_f64);
-        double * ptr_hw = (double *)data.data();
-        ret.half_window = nc::NDArrayPtr<DType>(new nc::NDArray<DType>({8193}));
+        ret.half_window = nc::NDArrayPtr<DType>(new nc::NDArray<DType>({kaiser_fast_half_window_len}));
         DType * ptr_ret = ret.half_window.data();
-        for (auto i = 0; i < 8193; i++) {
-            ptr_ret[i] = ptr_hw[i];
+        for (auto i = 0; i < kaiser_fast_half_window_len; i++) {
+            ptr_ret[i] = kaiser_fast_half_window_dat[i];
         }
         ret.precision = 512;
         ret.rolloff = 0.85;
     }
     else if (strcmp(filter, "kaiser_best") == 0) {
-        std::string data = Base64Decode(filter_kaiser_best_f64);
-        double * ptr_hw = (double *)data.data();
-        ret.half_window = nc::NDArrayPtr<DType>(new nc::NDArray<DType>({32769}));
+        ret.half_window = nc::NDArrayPtr<DType>(new nc::NDArray<DType>({kaiser_best_half_window_len}));
         DType * ptr_ret = ret.half_window.data();
-        for (auto i = 0; i < 32769; i++) {
-            ptr_ret[i] = ptr_hw[i];
+        for (auto i = 0; i < kaiser_best_half_window_len; i++) {
+            ptr_ret[i] = kaiser_best_half_window_dat[i];
         }
         ret.precision = 512;
         ret.rolloff = 0.94759372;

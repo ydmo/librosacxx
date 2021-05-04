@@ -408,6 +408,14 @@ public: // dynamic methods .....
     }
 
     template<typename RType>
+    void operator /= (const RType& rhs) {
+        auto _data = get()->_data;
+        for (auto i = 0; i < elemCount(); i++) {
+            _data[i] /= rhs;
+        }
+    }
+
+    template<typename RType>
     NDArrayPtr<DType> operator + (const RType& rhs) const {
         auto _data = get()->_data;
         auto _shape = get()->_shape;

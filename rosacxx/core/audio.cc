@@ -1,5 +1,6 @@
 #include <rosacxx/core/audio.h>
 #include <rosacxx/resamcxx/core.h>
+#include <rosacxx/util/utils.h>
 
 namespace rosacxx {
 namespace core {
@@ -16,16 +17,23 @@ nc::NDArrayF32Ptr tone(const float& __freq, const float& __sr, const int * __len
     return ret;
 }
 
-nc::NDArrayF32Ptr resample(const nc::NDArrayF32Ptr& y, const float& origin_sr, const float& target_sr, const char * res_type, const bool& scale) {
+nc::NDArrayF32Ptr resample(const nc::NDArrayF32Ptr& y, const float& origin_sr, const float& target_sr, const char * res_type, const bool& fix, const bool& scale) {
     float ratio = float(target_sr) / origin_sr;
     int n_samples = int(std::ceil(y.shape().back() * ratio));
+    nc::NDArrayF32Ptr y_hat = nullptr;
     if (strcmp(res_type, "kaiser_fast") == 0 || strcmp(res_type, "kaiser_best") == 0) {
-        return resam::resample(y, origin_sr, target_sr, -1, res_type);
+        y_hat = resam::resample(y, origin_sr, target_sr, -1, res_type);
     }
     else {
         throw std::runtime_error("Not implemented.");
     }
-    return nullptr;
+    if (fix) {
+        y_hat = utils::fix_length(y_hat, n_samples);
+    }
+    if (scale) {
+        y_hat /= std::sqrt(ratio);
+    }
+    return y_hat;
 }
 
 } // namespace core

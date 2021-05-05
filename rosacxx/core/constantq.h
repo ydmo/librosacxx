@@ -26,26 +26,24 @@ namespace core {
 /// @param scale            | bool          | If ``True``, scale the CQT response by square-root the length of each channel's filter.  This is analogous to ``norm='ortho'`` in FFT. If ``False``, do not scale the CQT. This is analogous to ``norm=None`` in FFT.
 /// @param pad_mode         | char *        | Padding mode for centered frame analysis.
 /// @param res_type         | char *        | By default, `cqt` will adaptively select a resampling mode which trades off accuracy at high frequencies for efficiency at low frequencies.
-/// @param dtype            | char *        | The (complex) data type of the output array.
 /// ----------
 /// Returns                 | Type          | Note
 /// @result CQT             | NDArrayF32::Ptr | Constant-Q value each frequency at each time.
 nc::NDArrayCpxF32Ptr cqt(
-        const nc::NDArrayF32Ptr&        __y = nullptr,
-        const float&                    __sr = 22050,
-        const int&                      __hop_length = 512,
-        const float&                    __fmin = 0,
-        const int&                      __n_bins = 84,
-        const int&                      __bins_per_octave = 12,
-        const float&                    __tuning = 0.0,
-        const float&                    __filter_scale = 1,
-        const float&                    __norm = 1,
-        const float&                    __sparsity = 1e-2,
+        const nc::NDArrayF32Ptr&        __y,
+        const float                     __sr = 22050,
+        const int                       __hop_length = 512,
+        const float                     __fmin = INFINITY,
+        const int                       __n_bins = 84,
+        const int                       __bins_per_octave = 12,
+        const float                     __tuning = 0,
+        const float                     __filter_scale = 1,
+        const float                     __norm =1 ,
+        const float                     __sparsity = 1e-2,
         const filters::STFTWindowType&  __window  = filters::STFTWindowType::Hanning,
         const bool                      __scale = true,
         const char *                    __pad_mode = "reflect",
-        const char *                    __res_type = "",
-        const char *                    __dtype = ""
+        const char *                    __res_type = NULL
         );
 
 /// Function: hybrid_cqt
@@ -65,26 +63,24 @@ nc::NDArrayCpxF32Ptr cqt(
 /// @param scale            | bool          | If ``True``, scale the CQT response by square-root the length of each channel's filter.  This is analogous to ``norm='ortho'`` in FFT. If ``False``, do not scale the CQT. This is analogous to ``norm=None`` in FFT.
 /// @param pad_mode         | char *        | Padding mode for centered frame analysis.
 /// @param res_type         | char *        | By default, `cqt` will adaptively select a resampling mode which trades off accuracy at high frequencies for efficiency at low frequencies.
-/// @param dtype            | char *        | The (complex) data type of the output array.
 /// ----------
 /// Returns                 | Type          | Note
 /// @result CQT             | NDArrayF32::Ptr | Constant-Q value each frequency at each time.
 nc::NDArrayCpxF32Ptr hybrid_cqt(
-        const nc::NDArrayF32Ptr& y = nullptr,
-        const float sr = 22050,
-        const int hop_length = 512,
-        const float fmin = 0,
-        const int n_bins = 84,
-        const int bins_per_octave = 12,
-        const float tuning = 0.0f,
-        const float filter_scale = 1,
-        const float norm = 1,
-        const float sparsity = 0.01f,
-        const char * window = "hann",
-        const bool scale = true,
-        const char * pad_mode = "reflect",
-        const char * res_type = "",
-        const char * dtype = ""
+        const nc::NDArrayF32Ptr&        __y,
+        const float                     __sr = 22050,
+        const int                       __hop_length = 512,
+        const float                     __fmin = INFINITY,
+        const int                       __n_bins = 84,
+        const int                       __bins_per_octave = 12,
+        const float                     __tuning = 0,
+        const float                     __filter_scale = 1,
+        const float                     __norm =1 ,
+        const float                     __sparsity = 1e-2,
+        const filters::STFTWindowType&  __window  = filters::STFTWindowType::Hanning,
+        const bool                      __scale = true,
+        const char *                    __pad_mode = "reflect",
+        const char *                    __res_type = NULL
         );
 
 
@@ -106,7 +102,6 @@ nc::NDArrayCpxF32Ptr hybrid_cqt(
 /// @param scale            | bool          | If ``True``, scale the CQT response by square-root the length of each channel's filter.  This is analogous to ``norm='ortho'`` in FFT. If ``False``, do not scale the CQT. This is analogous to ``norm=None`` in FFT.
 /// @param pad_mode         | char *        | Padding mode for centered frame analysis.
 /// @param res_type         | char *        | By default, `cqt` will adaptively select a resampling mode which trades off accuracy at high frequencies for efficiency at low frequencies.
-/// @param dtype            | char *        | The (complex) data type of the output array.
 /// ----------
 /// Returns                 | Type          | Note
 /// @result CQT             | NDArrayF32::Ptr | Constant-Q value each frequency at each time.
@@ -125,8 +120,7 @@ nc::NDArrayCpxF32Ptr vqt(
         const filters::STFTWindowType&  __window  = filters::STFTWindowType::Hanning,
         const bool                      __scale = true,
         const char *                    __pad_mode = "reflect",
-        const char *                    __res_type = NULL,
-        const char *                    __dtype = NULL
+        const char *                    __res_type = NULL
         );
 
 } // namespace core

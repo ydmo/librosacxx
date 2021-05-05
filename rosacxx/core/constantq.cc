@@ -192,8 +192,7 @@ nc::NDArrayCpxF32Ptr vqt(
         const filters::STFTWindowType&  __window,
         const bool                      __scale,
         const char *                    __pad_mode,
-        const char *                    __res_type,
-        const char *                    __dtype
+        const char *                    __res_type
         ) {
     nc::NDArrayF32Ptr y = __y;
     int hop_length = __hop_length;
@@ -300,23 +299,36 @@ nc::NDArrayCpxF32Ptr vqt(
 
 nc::NDArrayCpxF32Ptr cqt(
         const nc::NDArrayF32Ptr&        __y,
-        const float&                    __sr,
-        const int&                      __hop_length,
-        const float&                    __fmin,
-        const int&                      __n_bins,
-        const int&                      __bins_per_octave,
-        const float&                    __tuning,
-        const float&                    __filter_scale,
-        const float&                    __norm,
-        const float&                    __sparsity,
-        const filters::STFTWindowType&  __window, //  = filters::STFTWindowType::Hanning,
+        const float                     __sr,
+        const int                       __hop_length,
+        const float                     __fmin,
+        const int                       __n_bins,
+        const int                       __bins_per_octave,
+        const float                     __tuning,
+        const float                     __filter_scale,
+        const float                     __norm,
+        const float                     __sparsity,
+        const filters::STFTWindowType&  __window,
         const bool                      __scale,
         const char *                    __pad_mode,
-        const char *                    __res_type,
-        const char *                    __dtype
+        const char *                    __res_type
         ) {
     // CQT is the special case of VQT with gamma=0
-    return vqt(__y, __sr, __hop_length, __fmin, __n_bins, 0.f, __bins_per_octave, __tuning, __filter_scale, __norm, __sparsity, __window, __scale, __pad_mode, __res_type, __dtype);
+    return vqt(__y,
+               __sr,
+               __hop_length,
+               __fmin,
+               __n_bins,
+               0.0f,
+               __bins_per_octave,
+               __tuning,
+               __filter_scale,
+               __norm,
+               __sparsity,
+               __window,
+               __scale,
+               __pad_mode,
+               __res_type);
 }
 
 

@@ -805,3 +805,39 @@ TEST_F(ROSACXXTest, test_0x0a_vqt) { // CQT is the special case of VQT with gamm
         EXPECT_NEAR(C.getitem(i).imag(), C_pred.getitem(i).imag(), 1e-5);
     }
 }
+
+TEST_F(ROSACXXTest, test_0x0b_cqt) { // CQT is the special case of cqt with gamma=0
+    const float sr = ROSACXXTest_cqt_sr;
+    const float fmin = INFINITY;
+    const int n_bins = 12;
+    // const float gamma = 0.0;
+    const int bins_per_octave = 12;
+    const float tuning = 0;
+    const float filter_scale = 1;
+    const float norm = 1;
+    const float sparsity = 0.01;
+    const int hop_length = 512;
+
+    nc::NDArrayF32Ptr y = nc::NDArrayF32Ptr(new nc::NDArrayF32({ROSACXXTest_cqt_y_len}));
+    for (auto i = 0; i < ROSACXXTest_cqt_y_len; i++) {
+        *y.at(i) = float(ROSACXXTest_cqt_y_dat[i]);
+    }
+
+    std::vector<int> C_shape(ROSACXXTest_cqt_C_dims);
+    for (auto i = 0; i < ROSACXXTest_cqt_C_dims; i++) {
+        C_shape[i] = ROSACXXTest_cqt_C_shape[i];
+    }
+    nc::NDArrayPtr<std::complex<float>> C = nc::NDArrayPtr<std::complex<float>>(new nc::NDArray<std::complex<float>>(C_shape));
+    for (auto i = 0; i < C.elemCount(); i++) {
+        C.at(i)->real(float(ROSACXXTest_cqt_C_real_dat[i]));
+        C.at(i)->imag(float(ROSACXXTest_cqt_C_imag_dat[i]));
+    }
+
+    auto C_pred = rosacxx::core::cqt(y, sr, hop_length, fmin, n_bins, bins_per_octave, tuning, filter_scale, norm, sparsity);
+
+    EXPECT_EQ(C.shape(), C_pred.shape());//, true);
+    for (auto i = 0; i < C.elemCount(); i++) {
+        EXPECT_NEAR(C.getitem(i).real(), C_pred.getitem(i).real(), 3e-5);
+        EXPECT_NEAR(C.getitem(i).imag(), C_pred.getitem(i).imag(), 3e-5);
+    }
+}

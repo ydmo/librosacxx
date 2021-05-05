@@ -1186,8 +1186,86 @@ def gen_test_vqt_data():
 
 # </gen_test_vqt_data>
 
+
+# <gen_test_cqt_data/>
+def gen_test_cqt_data():
+
+    sr = 11025
+    fmin = None
+    n_bins = 12
+    bins_per_octave = 12
+    tuning = 0
+    filter_scale = 1
+    norm = 1
+    res_type = None
+    sparsity = 0.01
+    hop_length = 512
+
+    y = make_signal(sr, 2.0)
+
+    V = vqt(
+        y=y,
+        sr=sr,
+        hop_length=hop_length,
+        fmin=fmin,
+        n_bins=n_bins,
+        gamma=0.0,
+        bins_per_octave=bins_per_octave,
+        tuning=tuning,
+        filter_scale=filter_scale,
+        norm=norm,
+        sparsity=sparsity,
+        res_type=res_type,
+        )
+    
+    # C = librosa.cqt(
+    #     y=y,
+    #     sr=sr,
+    #     hop_length=hop_length,
+    #     fmin=fmin,
+    #     n_bins=n_bins,
+    #     bins_per_octave=bins_per_octave,
+    #     tuning=tuning,
+    #     filter_scale=filter_scale,
+    #     norm=norm,
+    #     sparsity=sparsity,
+    #     res_type=res_type,
+    #     )
+    # print(np.abs(C-V).max())
+    C = V
+
+    contents = """
+    #ifndef tests_data_cqt
+    #define tests_data_cqt
+
+    constexpr float  ROSACXXTest_cqt_sr = {0};
+    constexpr int    ROSACXXTest_cqt_y_len = {1};
+    constexpr double ROSACXXTest_cqt_y_dat[ROSACXXTest_cqt_y_len] = {{ {2} }};
+    
+    constexpr int    ROSACXXTest_cqt_C_dims = {3};
+    constexpr int    ROSACXXTest_cqt_C_shape[ROSACXXTest_cqt_C_dims] = {{ {4} }};
+    constexpr double ROSACXXTest_cqt_C_real_dat[{5}] = {{ {6} }};
+    constexpr double ROSACXXTest_cqt_C_imag_dat[{5}] = {{ {7} }};
+
+    #endif // tests_data_cqt
+    """.format(
+        sr, # 0
+        y.size, # 1
+        str(y.tolist()).replace('[', '').replace(']', ''), # 2
+        len(C.shape), # 3
+        str(C.shape).replace('(', '').replace(')', '').replace('[', '').replace(']', ''), # 4
+        C.size, # 5
+        str(C.real.reshape(-1).tolist()).replace('[', '').replace(']', ''), # 6
+        str(C.imag.reshape(-1).tolist()).replace('[', '').replace(']', ''), # 7
+        )
+    with open("/home/yuda/Documents/Projects/raspai/song_scoring/heart/scorpio/3rd/librosacxx/tests/tests_data_cqt.h", "w+") as fp:
+        fp.write(contents)
+    # end-with
+
+# </gen_test_cqt_data>
+
 if __name__ == '__main__':
-    gen_test_vqt_data()
+    gen_test_cqt_data()
     
 
     

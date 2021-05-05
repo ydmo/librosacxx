@@ -1,6 +1,7 @@
 #ifndef ROSACXX_FILTERS_H
 #define ROSACXX_FILTERS_H
 
+#include <iostream>
 #include <stdio.h>
 #include <map>
 #include <string>
@@ -161,30 +162,6 @@ nc::NDArrayPtr<DType> __float_window(const STFTWindowType& __windowType, const f
     return window;
 }
 
-/// Function: cq_to_chroma
-/// ----------
-/// Param Name              | Type          | Note
-/// @param                  |               |
-/// @param                  |               |
-/// @param                  |               |
-/// @param                  |               |
-/// @param                  |               |
-/// @param                  |               |
-/// ----------
-/// @result                 |               |
-template<typename DType = float>
-inline nc::NDArrayPtr<DType> cq_to_chroma(
-        const int& n_input,
-        const int& bins_per_octave =            12,
-        const int& n_chroma =                   12,
-        const float& fmin =                     0,
-        const nc::NDArrayF32Ptr& window =    nullptr,
-        const bool& base_c =                    true
-        ) {
-    throw std::runtime_error("Not implemented error");
-    return nullptr;
-}
-
 /// Function: window_bandwidth
 /// Get the equivalent noise bandwidth of a window function.
 /// ----------
@@ -309,6 +286,87 @@ inline RetConstantQ<DType> constant_q(
 
     return ret;
 }
+
+/// Function: cq_to_chroma
+/// ----------
+/// Param Name              | Type          | Note
+/// @param                  |               |
+/// @param                  |               |
+/// @param                  |               |
+/// @param                  |               |
+/// @param                  |               |
+/// @param                  |               |
+/// ----------
+/// @result                 |               |
+template<typename DType = float>
+inline nc::NDArrayPtr<DType> cq_to_chroma(
+        const int& __n_input,
+        const int& __bins_per_octave =      12,
+        const int& __n_chroma =             12,
+        const float& __fmin =               INFINITY,
+        const nc::NDArrayF32Ptr& __window = nullptr,
+        const bool& __base_c =              true
+        ) {
+    // --------
+    int n_input = __n_input;
+    int bins_per_octave = __bins_per_octave;
+    int n_chroma = __n_chroma;
+    float fmin = __fmin;
+    // --------
+
+    double n_merge = double(bins_per_octave) / n_chroma;
+
+    if (fmin == INFINITY) {
+        fmin = core::note_to_hz("C1");
+    }
+
+    if (n_merge - int(n_merge / 1) * 1 != 0) {
+        throw std::runtime_error(
+            "Incompatible CQ merge: "
+            "input bins must be an "
+            "integer multiple of output bins."
+            );
+    }
+
+    // # Tile the identity to merge fractional bins
+    // cq_to_ch = np.repeat(np.eye(n_chroma), n_merge, axis=1)
+    nc::NDArrayPtr<DType> cq_to_ch = nc::NDArrayPtr<DType>(new nc::NDArray<DType>({n_chroma, n_chroma * int(n_merge)}));
+    auto ptr_cq_to_ch = cq_to_ch.data();
+    for (auto r = 0; r < n_chroma; r++) {
+        for (auto c = 0; c < n_chroma; c++) {
+            DType val = r == c? DType(1) : 0;
+            for (auto m = 0; m < int(n_merge); m++) {
+                *ptr_cq_to_ch++ = val;
+            }
+        }
+    }
+    std::cout << cq_to_ch << std::end;
+
+    // # Roll it left to center on the target bin
+    // cq_to_ch = np.roll(cq_to_ch, -int(n_merge // 2), axis=1)
+    nc::NDArrayPtr<DType> cq_to_ch_new = nc::NDArrayPtr<DType>(new nc::NDArray<DType>(cq_to_ch.shape()));
+    for (int r = 0; r < cq_to_ch.shape()[0]; r++) {
+        auto ptr_cq_to_ch_r = cq_to_ch.at(r, 0);
+        auto ptr_cq_to_ch_new_r = cq_to_ch_new.at(r, 0);
+        for (int c = 0; c < cq_to_ch.shape()[1]; c++) {
+            int c_from = c;
+            int c_to = c - int(n_merge) / 2;
+            if (c_to < 0) c_to += cq_to_ch.shape()[1];
+            ptr_cq_to_ch_new_r[c_to] = ptr_cq_to_ch_r[c_from];
+        }
+    }
+    cq_to_ch = cq_to_ch_new;
+
+    //  n_octaves = np.ceil(np.float(n_input) / bins_per_octave)
+    int  n_octaves = std::ceil(float(n_input) / bins_per_octave);
+
+    // # Repeat and trim
+    // cq_to_ch = np.tile(cq_to_ch, int(n_octaves))[:, :n_input]
+
+
+    return nullptr;
+}
+
 
 } // namespace filters
 } // namespace rosacxx

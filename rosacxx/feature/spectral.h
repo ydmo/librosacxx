@@ -33,44 +33,62 @@ namespace feature {
 /// ----------
 /// @result chromagram      | NDArrayF32::Ptr | The output chromagram, shape=(n_chroma, t)
 inline nc::NDArrayF32Ptr chroma_cqt(
-        const nc::NDArrayF32Ptr& i_y,
-        const float&                i_sr =                22050,
-        const nc::NDArrayF32Ptr& i_C =                 nullptr,
-        const int&                  i_hop_length =        512,
-        const float&                i_fmin =              0,
-        const int&                  i_norm =              0,
-        const float&                i_threshold =         0,
-        const float&                i_tuning =            0,
-        const int&                  i_n_chroma =          12,
-        const int&                  i_n_octaves =         7,
-        const nc::NDArrayF32Ptr& i_window =            nullptr,
-        const int&                  i_bins_per_octave =   36,
-        const char *                i_cqt_mode =          "full"
+        const nc::NDArrayF32Ptr&    __y,
+        const float&                __sr =                22050,
+        const nc::NDArrayF32Ptr&    __C =                 nullptr,
+        const int&                  __hop_length =        512,
+        const float&                __fmin =              0,
+        const int&                  __norm =              0,
+        const float&                __threshold =         0,
+        const float&                __tuning =            0,
+        const int&                  __n_chroma =          12,
+        const int&                  __n_octaves =         7,
+        const nc::NDArrayF32Ptr&    __window =            nullptr,
+        const int&                  __bins_per_octave =   36,
+        const char *                __cqt_mode =          "full"
         ) {
+    // --------
 
-    if (i_y == nullptr) {
+    nc::NDArrayF32Ptr y = __y;
+    float sr = __sr;
+    int hop_length = __hop_length;
+    float fmin = __fmin;
+    int n_octaves = __n_octaves;
+    int n_chroma = __n_chroma;
+    int bins_per_octave = __bins_per_octave;
+    float tuning = __tuning;
+    nc::NDArrayF32Ptr C = __C;
+
+    // --------
+
+    if (y == nullptr) {
         throw std::invalid_argument("i_y is nullptr.");
         return nullptr;
     }
 
-    int n_chroma = i_n_chroma;
-    int bins_per_octave = i_bins_per_octave;
-    if (bins_per_octave == 0) {
+
+    if (bins_per_octave <= 0) {
         bins_per_octave = n_chroma;
     }
-    else {
-        if (bins_per_octave % n_chroma) {
-            throw std::invalid_argument("bins_per_octave must be an integer multiple of n_chroma.");
-        }
+    else if (bins_per_octave % n_chroma) {
+        throw std::invalid_argument("bins_per_octave must be an integer multiple of n_chroma.");
     }
 
     // Build the CQT if we don't have one already
-    nc::NDArrayF32Ptr C = nullptr;
-    if (i_C == NULL) {
-        if (strcmp("full", i_cqt_mode) == 0) {
-            C = nullptr;
+    if (!C) {
+        if (strcmp("full", __cqt_mode) == 0) {
+            C = nc::abs(core::cqt(
+                            y,
+                            sr,
+                            hop_length,
+                            fmin,
+                            n_octaves * bins_per_octave,
+                            bins_per_octave,
+                            tuning
+                            )
+                        );
         }
-        else if (strcmp("hybrid", i_cqt_mode) == 0) {
+        else if (strcmp("hybrid", __cqt_mode) == 0) {
             C = nullptr;
         }
         else {
@@ -80,23 +98,23 @@ inline nc::NDArrayF32Ptr chroma_cqt(
 
     nc::NDArrayF32Ptr cq_to_chr = filters::cq_to_chroma<float>(
         C.shape()[0],
-        i_bins_per_octave,
-        i_n_chroma,
-        i_fmin,
-        i_window
+        __bins_per_octave,
+        __n_chroma,
+        __fmin,
+        __window
         );
 
     nc::NDArrayF32Ptr chroma = cq_to_chr.dot(C);
 
-    if (i_threshold != -FLT_MAX) {
+    if (__threshold != -FLT_MAX) {
         // chroma[chroma < threshold] = 0.0;
         float * ptr = chroma.data();
         for (auto i = 0; i < chroma.elemCount(); i++) {
-            if (ptr[i] < i_threshold) ptr[i] = 0.0f;
+            if (ptr[i] < __threshold) ptr[i] = 0.0f;
         }
     }
 
-    if (i_norm != INFINITY) {
+    if (__norm != INFINITY) {
         // chroma = util.normalize(chroma, norm=norm, axis=0)
     }
 

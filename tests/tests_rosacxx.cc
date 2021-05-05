@@ -1,11 +1,13 @@
 #include <iostream>
 #include <gtest/gtest.h>
 
+#include <rosacxx/complex/complex.h>
 #include <rosacxx/filters.h>
 #include <rosacxx/core/pitch.h>
 #include <rosacxx/core/convert.h>
 #include <rosacxx/core/spectrum.h>
 #include <rosacxx/core/audio.h>
+#include <rosacxx/core/constantq.h>
 
 #include "tests_data.h"
 
@@ -466,8 +468,8 @@ TEST_F(ROSACXXTest, test_0x03_stft) {
         for (auto j = 0; j < 129; j++) {
             // std::cout << "arr_stft_matrix.getitem("<< i << "," << j << ") = " << arr_stft_matrix.getitem(i,j) << " vs ";
             // std::cout << vec2d_x[j][i * 2 + 0] << " + " << vec2d_x[j][i * 2 + 1] << "j" << std::endl;
-            EXPECT_NEAR( arr_stft_matrix.getitem(i,j).r, vec2d_x[j][i * 2 + 0], 1e-6);
-            EXPECT_NEAR( arr_stft_matrix.getitem(i,j).i, vec2d_x[j][i * 2 + 1], 1e-6);
+            EXPECT_NEAR( arr_stft_matrix.getitem(i,j).real(), vec2d_x[j][i * 2 + 0], 1e-6);
+            EXPECT_NEAR( arr_stft_matrix.getitem(i,j).imag(), vec2d_x[j][i * 2 + 1], 1e-6);
         }
     }
 }
@@ -614,8 +616,8 @@ TEST_F(ROSACXXTest, test_0x04_stft_double) {
         for (auto j = 0; j < 129; j++) {
             // std::cout << "arr_stft_matrix.getitem("<< i << "," << j << ") = " << arr_stft_matrix.getitem(i,j) << " vs ";
             // std::cout << vec2d_x[j][i * 2 + 0] << " + " << vec2d_x[j][i * 2 + 1] << "j" << std::endl;
-            EXPECT_NEAR( arr_stft_matrix.getitem(i,j).r, vec2d_x[j][i * 2 + 0], 1e-6);
-            EXPECT_NEAR( arr_stft_matrix.getitem(i,j).i, vec2d_x[j][i * 2 + 1], 1e-6);
+            EXPECT_NEAR( arr_stft_matrix.getitem(i,j).real(), vec2d_x[j][i * 2 + 0], 1e-6);
+            EXPECT_NEAR( arr_stft_matrix.getitem(i,j).imag(), vec2d_x[j][i * 2 + 1], 1e-6);
         }
     }
 }
@@ -765,5 +767,41 @@ TEST_F(ROSACXXTest, test_0x09_resample_kaiser_fast) {
     EXPECT_EQ(dst.elemCount(), ROSACXXTest_resample_kaiser_fast_dst_len);
     for (auto i = 0; i < ROSACXXTest_resample_kaiser_fast_dst_len; i++) {
         EXPECT_NEAR(ROSACXXTest_resample_kaiser_fast_dst_dat[i], dst.getitem(i), 1e-6);
+    }
+}
+
+TEST_F(ROSACXXTest, test_0x0a_vqt) { // CQT is the special case of VQT with gamma=0
+    const float sr = ROSACXXTest_vqt_sr;
+    const float fmin = INFINITY;
+    const int n_bins = 12;
+    const float gamma = INFINITY;
+    const int bins_per_octave = 12;
+    const float tuning = 0;
+    const float filter_scale = 1;
+    const float norm = 1;
+    const float sparsity = 0.01;
+    const int hop_length = 512;
+
+    nc::NDArrayF32Ptr y = nc::NDArrayF32Ptr(new nc::NDArrayF32({ROSACXXTest_vqt_y_len}));
+    for (auto i = 0; i < ROSACXXTest_vqt_y_len; i++) {
+        *y.at(i) = float(ROSACXXTest_vqt_y_dat[i]);
+    }
+
+    std::vector<int> C_shape(ROSACXXTest_vqt_C_dims);
+    for (auto i = 0; i < ROSACXXTest_vqt_C_dims; i++) {
+        C_shape[i] = ROSACXXTest_vqt_C_shape[i];
+    }
+    nc::NDArrayPtr<std::complex<float>> C = nc::NDArrayPtr<std::complex<float>>(new nc::NDArray<std::complex<float>>(C_shape));
+    for (auto i = 0; i < C.elemCount(); i++) {
+        C.at(i)->real(float(ROSACXXTest_vqt_C_real_dat[i]));
+        C.at(i)->imag(float(ROSACXXTest_vqt_C_imag_dat[i]));
+    }
+
+    auto C_pred = rosacxx::core::vqt(y, sr, hop_length, fmin, n_bins, gamma, bins_per_octave, tuning, filter_scale, norm, sparsity);
+
+    EXPECT_EQ(C.shape(), C_pred.shape());//, true);
+    for (auto i = 0; i < C.elemCount(); i++) {
+        EXPECT_NEAR(C.getitem(i).real(), C_pred.getitem(i).real(), 1e-5);
+        EXPECT_NEAR(C.getitem(i).imag(), C_pred.getitem(i).imag(), 1e-5);
     }
 }

@@ -2,6 +2,7 @@
 #define ROSACXX_FFT_FFT_H
 
 #include <stdio.h>
+#include <complex>
 
 #if ROSACXX_FFT_PRECISION_F32
 #   define fft_scalar_t float

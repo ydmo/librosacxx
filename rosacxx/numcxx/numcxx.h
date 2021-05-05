@@ -2,12 +2,13 @@
 #define NUMCXX_H
 
 #include <rosacxx/half/half.h>
-#include <rosacxx/complex/complex.h>
+// #include <rosacxx/complex/complex.h>
 
 #include <rosacxx/numcxx/ndarray.h>
 #include <rosacxx/numcxx/pad.h>
 
 #include <iomanip>
+#include <complex>
 
 namespace nc {
 
@@ -94,6 +95,15 @@ inline NDArrayPtr<DType> arange(DType __x) {
 }
 
 template<typename DType>
+inline NDArrayPtr<DType> arange(const int& __from, const int& __to) {
+    std::vector<DType> vec;
+    for (int k = __from; k < __to; k++) {
+        vec.push_back(DType(k));
+    }
+    return NDArrayPtr<DType>::FromVec1D(vec);
+}
+
+template<typename DType>
 inline NDArrayS32Ptr argmax(const NDArrayPtr<DType>& a, int axis = -1) {
     if (axis >= 0) {
         return a.argmax(axis);
@@ -143,13 +153,14 @@ inline NDArrayPtr<DType> abs(const NDArrayPtr<DType>& __arr) {
     return ret;
 }
 
-template<typename DType>
-inline NDArrayPtr<DType> abs(const NDArrayPtr<complex::Complex<DType>>& __arr) {
+template<typename DType = float>
+inline NDArrayPtr<DType> abs(const NDArrayPtr<std::complex<DType>>& __arr) {
     NDArrayPtr<DType> ret = NDArrayPtr<DType>(new NDArray<DType>(__arr.shape()));
     DType * ptr_ret = ret.data();
-    complex::Complex<DType> * ptr_src = __arr.data();
+    std::complex<DType> * ptr_src = __arr.data();
     for (int i = 0; i < __arr.elemCount(); i++) {
-        ptr_ret[i] = std::sqrt(ptr_src[i].r * ptr_src[i].r + ptr_src[i].i * ptr_src[i].i);
+        // ptr_ret[i] = std::sqrt(ptr_src[i].real * ptr_src[i].real + ptr_src[i].imag * ptr_src[i].imag);
+        ptr_ret[i] = std::abs(ptr_src[i]);
     }
     return ret;
 }
@@ -160,7 +171,7 @@ inline NDArrayPtr<DType> pow(const NDArrayPtr<DType>& __arr, DType __power) {
     DType * ptr_ret = ret.data();
     DType * ptr_src = __arr.data();
     for (int i = 0; i < __arr.elemCount(); i++) {
-        ptr_ret = std::pow(ptr_src[i], __power);
+        ptr_ret[i] = std::pow(ptr_src[i], __power);
     }
     return ret;
 }
@@ -173,6 +184,18 @@ inline NDArrayPtr<DType> operator * (const DType& lhs, const NDArrayPtr<DType>& 
     auto ptr_ret = ret.data();
     for (auto i = 0; i < rhs.elemCount(); i++) {
         ptr_ret[i] = r_data[i] * lhs;
+    }
+    return ret;
+}
+
+template<typename DType>
+inline NDArrayPtr<DType> operator / (const DType& lhs, const NDArrayPtr<DType>& rhs) {
+    auto r_data = rhs.data();
+    auto r_shape = rhs.shape();
+    auto ret = NDArrayPtr<DType>(new NDArray<DType>(r_shape));
+    auto ptr_ret = ret.data();
+    for (auto i = 0; i < rhs.elemCount(); i++) {
+        ptr_ret[i] = lhs / r_data[i];
     }
     return ret;
 }
@@ -245,6 +268,38 @@ inline NDArrayS32Ptr argwhere(const NDArrayPtr<DType>& __arr) {
     }
 
     return NDArrayS32Ptr::FromVec2D(coors);
+}
+
+template<typename DType = float>
+inline int len(const NDArrayPtr<DType>& __arr) {
+    return __arr.shape()[0];
+}
+
+template<typename DType = float>
+NDArrayPtr<DType> matmul(const NDArrayPtr<DType>& A, const NDArrayPtr<DType>& B) {
+    assert(A.dims() == 2);
+    assert(B.dims() == 2);
+    assert(A.shape()[1] == B.shape()[0]);
+    int M = A.shape()[0];
+    int K = A.shape()[1];
+    int N = B.shape()[1];
+
+    NDArrayPtr<DType> C = NDArrayPtr<DType>(new NDArray<DType>({M, N}));
+    auto ptr_C = C.data();
+    auto ptr_A = A.data();
+    auto ptr_B = B.data();
+
+    #pragma omp parallel for
+    for(int i = 0; i < M; ++i) {
+        for(int k = 0; k < K; ++k){
+            DType A_PART = ptr_A[i*K+k];
+            for(int j = 0; j < N; ++j){
+                ptr_C[i*N+j] += A_PART * ptr_B[k*N+j];
+            }
+        }
+    }
+
+    return C;
 }
 
 } // namepace nc

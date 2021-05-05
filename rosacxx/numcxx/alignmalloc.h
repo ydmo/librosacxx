@@ -8,6 +8,7 @@
 #include <cstring>
 #include <sstream>
 #include <cmath>
+#include <cassert>
 
 namespace nc {
 

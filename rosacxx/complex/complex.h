@@ -2,34 +2,46 @@
 #define ROSACXX_COMPLEX_H
 
 #include <iostream>
+#include <complex>
 
-namespace complex {
+namespace cpx {
 
 template <typename DType>
-struct Complex {
+struct complex {
 
-    Complex(const DType& __ri) : r(__ri), i(__ri) { }
-    Complex(const DType& __r, const DType& __i) : r(__r), i(__i) { }
-    Complex(const Complex& __other) : Complex(__other.r, __other.i) { }
+    complex(const DType& __ri) : _r(__ri), _i(__ri) { }
+    complex(const DType& __r, const DType& __i) : _r(__r), _i(__i) { }
+    complex(const complex& __other) : complex(__other._r, __other._i) { }
+
+    DType imag() const { return _i; }
+    DType real() const { return _r; }
+
+    void imag(const DType& __i) {
+        _i = __i;
+    }
+
+    void real(const DType& __r) {
+        _r = __r;
+    }
 
     bool operator == (const DType& __other) const {
-        return (this->r == __other) && (this->i == __other);
+        return (this->_r == __other) && (this->_i == __other);
     }
 
-    bool operator == (const Complex<DType>& __other) const {
-        return (this->r == __other.r) && (this->i == __other.i);
+    bool operator == (const complex<DType>& __other) const {
+        return (this->_r == __other._r) && (this->_i == __other._i);
     }
 
-    DType r;
-    DType i;
+    DType _r;
+    DType _i;
 };
 
 template<typename DType>
-inline std::ostream &operator << (std::ostream &__os, const Complex<DType>& __cpx) {
-    __os << int((__cpx.r) * 1e6) * 1e-6 << " + " << int((__cpx.i) * 1e6) * 1e-6 << "j";
+inline std::ostream &operator << (std::ostream &__os, const complex<DType>& __cpx) {
+    __os << int((__cpx._r) * 1e6) * 1e-6 << " + " << int((__cpx._i) * 1e6) * 1e-6 << "j";
     return __os;
 }
 
-} // namespace complex
+} // namespace cpx
 
 #endif // ROSACXX_COMPLEX_H

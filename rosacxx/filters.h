@@ -4,7 +4,10 @@
 #include <stdio.h>
 #include <map>
 #include <string>
+
 #include <rosacxx/numcxx/numcxx.h>
+#include <rosacxx/core/convert.h>
+#include <rosacxx/util/utils.h>
 
 namespace rosacxx {
 namespace filters {
@@ -17,10 +20,11 @@ enum STFTWindowType : int {
     Blackman =          4,
     BlackmanHarris =    5,
     Nuttall =           6,
-    End =               7,
+    Ones =              7,
+    End =               8,
 };
 
-constexpr double WINDOW_BANDWIDTHS[7] = {
+constexpr double WINDOW_BANDWIDTHS[STFTWindowType::End] = {
     /* STFTWindowType::Rectangular = */     1.0,
     /* STFTWindowType::Bartlett = */        1.3334961334912805,
     /* STFTWindowType::Hamming = */         1.3629455320350348,
@@ -28,6 +32,7 @@ constexpr double WINDOW_BANDWIDTHS[7] = {
     /* STFTWindowType::Blackman = */        1.7269681554262326,
     /* STFTWindowType::blackmanharris = */  2.0045975283585014,
     /* STFTWindowType::Nuttall = */         1.9763500280946082,
+    /* STFTWindowType::Ones = */            1.0,
 };
 
 //--- python-librosa -----------------------------------
@@ -77,7 +82,7 @@ constexpr double WINDOW_BANDWIDTHS[7] = {
 
 template<typename DType = float>
 nc::NDArrayPtr<DType> get_window(const STFTWindowType& __windowType, const int& Nx, const bool& __fftbins=true) {
-    if (__windowType == STFTWindowType::Rectangular) {
+    if (__windowType == STFTWindowType::Rectangular || __windowType == STFTWindowType::Ones) {
         return nc::NDArrayPtr<DType>(new nc::NDArray<DType>({Nx}, DType(1)));
     }
     else if (__windowType == STFTWindowType::Bartlett) {
@@ -145,6 +150,17 @@ nc::NDArrayPtr<DType> get_window(const STFTWindowType& __windowType, const int& 
     return nullptr;
 }
 
+template<typename DType = float>
+nc::NDArrayPtr<DType> __float_window(const STFTWindowType& __windowType, const float& n) {
+    int n_min = int(std::floor(n));
+    int n_max = int(std::ceil(n));
+    auto window = get_window(__windowType, n_min);
+    if (n_min < n_max) {
+        window = nc::pad(window, {std::make_pair(0, n_max - n_min)});
+    }
+    return window;
+}
+
 /// Function: cq_to_chroma
 /// ----------
 /// Param Name              | Type          | Note
@@ -184,6 +200,114 @@ inline float window_bandwidth(const STFTWindowType& __windowType, const int& __n
         throw std::runtime_error("Not implemented of window_bandwidth.");
         return -1;
     }
+}
+
+inline nc::NDArrayF32Ptr __compute_frequencies(const float& fmin, const int& n_bins, const int& bins_per_octave) {
+    std::vector<float> vec_freq(n_bins);
+    for (auto i = 0; i < n_bins; i++) {
+        vec_freq[i] = float(fmin * std::pow(2.0, double(i) / bins_per_octave));
+    }
+    return nc::NDArrayF32Ptr::FromVec1D(vec_freq);
+}
+
+inline nc::NDArrayF32Ptr constant_q_lengths(
+        const float& sr,
+        const float& fmin,
+        const int& n_bins=84,
+        const int& bins_per_octave=12,
+        const STFTWindowType& window=STFTWindowType::Hanning,
+        const float& filter_scale=1,
+        const float& gamma=0
+        ) {
+
+    if (fmin <= 0) throw std::invalid_argument("fmin must be positive");
+    if (bins_per_octave <= 0) throw std::invalid_argument("bins_per_octave must be positive");
+    if (filter_scale <= 0) throw std::invalid_argument("filter_scale must be positive");
+    if (n_bins <= 0) throw std::invalid_argument("n_bins must be a positive integer");
+
+    // Q should be capitalized here, so we suppress the name warning
+    // pylint: disable=invalid-name
+    float alpha = std::pow(2.0, (1.0 / bins_per_octave)) - 1.0;
+    float Q = float(filter_scale) / alpha;
+
+    // Compute the frequencies
+    nc::NDArrayF32Ptr freq = __compute_frequencies(fmin, n_bins, bins_per_octave);
+
+    if (freq.getitem(freq.elemCount()-1) * (1 + 0.5 * window_bandwidth(window) / Q) > sr / 2.0) throw std::invalid_argument("Filter pass-band lies beyond Nyquist");
+
+    // Convert frequencies to filter lengths
+    auto lengths = (Q * sr) / (freq + (gamma / alpha));
+
+    return lengths;
+}
+
+template<typename DType = float>
+struct RetConstantQ {
+    std::vector<nc::NDArrayPtr<std::complex<float>>> filters;
+    nc::NDArrayPtr<DType> lengths;
+};
+
+template<typename DType = float>
+inline RetConstantQ<DType> constant_q(
+        const float& sr,
+        const float& __fmin = INFINITY,
+        const int& n_bins = 84,
+        const int& bins_per_octave = 12,
+        const STFTWindowType& window=STFTWindowType::Hanning,
+        const float& filter_scale = 1,
+        const bool& pad_fft = true,
+        const float& norm = 1,
+        const float& gamma = 0
+        ) {
+    float fmin = __fmin;
+    if (fmin == INFINITY) {
+        fmin = core::note_to_hz("C1");
+    }
+    nc::NDArrayF32Ptr lengths = constant_q_lengths(sr, fmin, n_bins, bins_per_octave, window, filter_scale, gamma);
+
+    nc::NDArrayF32Ptr freqs = __compute_frequencies(fmin, n_bins, bins_per_octave);
+
+    // Build the filters
+    std::vector<nc::NDArrayPtr<std::complex<float>>> filters(0);
+    for (auto i = 0; i < freqs.elemCount(); i++) {
+        auto ilen = lengths.getitem(i);
+        auto freq = freqs.getitem(i);
+
+        std::vector<std::complex<float>> vec_sig(0);
+        for (int k = int(std::floor(-ilen / 2)); k < int(std::floor(ilen/2)); k++) {
+            std::complex<float> x;
+            x.real(0);
+            x.imag(k * 2 * M_PI * freq / sr);
+            x = std::exp(x);
+            vec_sig.push_back(x);
+        }
+
+        nc::NDArrayPtr<std::complex<float>> sig = nc::NDArrayPtr<std::complex<float>>::FromVec1D(vec_sig);
+
+        sig = sig * __float_window(window, len(sig));
+
+        // Normalize ---------------------
+        auto mag = nc::abs(sig);
+        float sum = nc::pow(mag, norm).sum();
+        float length = std::pow(sum, (1.0 / norm));
+        sig /= length;
+        // Normalize ---------------------
+
+        filters.push_back(sig);
+    }
+
+    auto max_len_f = lengths.max();
+    int max_len = int(std::pow(2.0, (std::ceil(std::log2(max_len_f)))));
+
+    for (auto i = 0; i < filters.size(); i++) {
+        filters[i] = utils::pad_center_1d(filters[i], max_len);
+    }
+
+    RetConstantQ<DType> ret;
+    ret.filters = filters;
+    ret.lengths = lengths;
+
+    return ret;
 }
 
 } // namespace filters

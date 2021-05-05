@@ -4,10 +4,8 @@
 namespace rosacxx {
 namespace core {
 
-using namespace complex;
-
-nc::NDArrayPtr<Complex<float>> rfft(const nc::NDArrayPtr<float>& __real_data, const int& __n_fft) {
-    nc::NDArrayPtr<Complex<float>> co = nc::NDArrayPtr<Complex<float>>(new nc::NDArray<Complex<float>>({__n_fft / 2 + 1}));
+nc::NDArrayPtr<std::complex<float>> rfft(const nc::NDArrayPtr<float>& __real_data, const int& __n_fft) {
+    nc::NDArrayPtr<std::complex<float>> co = nc::NDArrayPtr<std::complex<float>>(new nc::NDArray<std::complex<float>>({__n_fft / 2 + 1}));
     float * ptr_co = (float *)co.data();
     float * ptr_ri = __real_data.data();
 #   if ROSACXX_FFT_PRECISION_F32
@@ -28,8 +26,8 @@ nc::NDArrayPtr<Complex<float>> rfft(const nc::NDArrayPtr<float>& __real_data, co
     return co;
 }
 
-nc::NDArrayPtr<Complex<double>> rfft(const nc::NDArrayPtr<double>& __real_data, const int& __n_fft) {
-    nc::NDArrayPtr<Complex<double>> co = nc::NDArrayPtr<Complex<double>>(new nc::NDArray<Complex<double>>({__n_fft / 2 + 1}));
+nc::NDArrayPtr<std::complex<double>> rfft(const nc::NDArrayPtr<double>& __real_data, const int& __n_fft) {
+    nc::NDArrayPtr<std::complex<double>> co = nc::NDArrayPtr<std::complex<double>>(new nc::NDArray<std::complex<double>>({__n_fft / 2 + 1}));
     double * ptr_co = (double *)co.data();
     double * ptr_ri = __real_data.data();
 #   if ROSACXX_FFT_PRECISION_F32

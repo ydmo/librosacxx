@@ -4,6 +4,7 @@
 #include <rosacxx/numcxx/alignmalloc.h>
 #include <rosacxx/numcxx/utils.h>
 #include <rosacxx/half/half.h>
+#include <complex>
 
 namespace nc {
 
@@ -840,6 +841,15 @@ public: // dynamic methods .....
         return getitems(__mask);
     }
 
+    DType sum() const {
+        auto _data = get()->_data;
+        DType sum = 0;
+        for (int i = 0; i < elemCount(); i++) {
+            sum += _data[i];
+        }
+        return sum;
+    }
+
     DType min() const {
         auto _data = get()->_data;
         DType min_val = _data[0];
@@ -1118,6 +1128,25 @@ public: // dynamic methods .....
         }
         return ret;
     }
+
+    std::vector<std::vector<DType>> toStdVector2D() const {
+        auto _data = get()->_data;
+        auto _shape = get()->_shape;
+        // --------
+        assert(_shape.size() == 2);
+        int rows = _shape[0];
+        int cols = _shape[1];
+        DType * ptr_data = _data;
+        std::vector<std::vector<DType>> ret(0);
+        for (auto r = 0; r < rows; r++) {
+            std::vector<DType> v(cols);
+            for (auto c = 0; c < cols; c++) {
+                v[c] = *ptr_data++;
+            }
+            ret.push_back(v);
+        }
+        return ret;
+    }
 };
 
 #ifdef HALF_HALF_HPP
@@ -1132,6 +1161,19 @@ typedef NDArrayPtr<unsigned char>      NDArrayU8Ptr;
 typedef NDArrayPtr<unsigned short>     NDArrayU16Ptr;
 typedef NDArrayPtr<unsigned int>       NDArrayU32Ptr;
 typedef NDArrayPtr<bool>               NDArrayBoolPtr;
+
+#ifdef HALF_HALF_HPP
+typedef NDArrayPtr<std::complex<half_float::half>>   NDArrayCpxF16Ptr;
+#endif // HALF_HALF_HPP
+typedef NDArrayPtr<std::complex<float>>              NDArrayCpxF32Ptr;
+typedef NDArrayPtr<std::complex<double>>             NDArrayCpxF64Ptr;
+typedef NDArrayPtr<std::complex<char>>               NDArrayCpxS8Ptr;
+typedef NDArrayPtr<std::complex<short>>              NDArrayCpxS16Ptr;
+typedef NDArrayPtr<std::complex<int>>                NDArrayCpxS32Ptr;
+typedef NDArrayPtr<std::complex<unsigned char>>      NDArrayCpxU8Ptr;
+typedef NDArrayPtr<std::complex<unsigned short>>     NDArrayCpxU16Ptr;
+typedef NDArrayPtr<std::complex<unsigned int>>       NDArrayCpxU32Ptr;
+typedef NDArrayPtr<std::complex<bool>>               NDArrayCpxBoolPtr;
 
 } // namespace nc
 

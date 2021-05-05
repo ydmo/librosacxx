@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <complex>
 
 #if ROSACXX_FFT_PRECISION_F32
 #   define kiss_fft_scalar_t float
@@ -7,6 +8,9 @@
 #endif // ROSACXX_FFT_PRECISION_F32
 
 namespace vkfft {
+
+void fft_forward(unsigned int n, const std::complex<kiss_fft_scalar_t> *ci, std::complex<kiss_fft_scalar_t> *co);
+void fft_inverse(unsigned int n, const std::complex<kiss_fft_scalar_t> *ci, std::complex<kiss_fft_scalar_t> *co);
 
 void fft_forward(unsigned int n, const kiss_fft_scalar_t *ri, const kiss_fft_scalar_t *ii, kiss_fft_scalar_t *ro, kiss_fft_scalar_t *io);
 void fft_inverse(unsigned int n, const kiss_fft_scalar_t *ri, const kiss_fft_scalar_t *ii, kiss_fft_scalar_t *ro, kiss_fft_scalar_t *io);

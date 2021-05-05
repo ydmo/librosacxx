@@ -8,13 +8,12 @@
 #include <cmath>
 #include <map>
 #include <iostream>
+#include <complex>
 
 namespace rosacxx {
 namespace core {
 
-using namespace complex;
-
-nc::NDArrayPtr<Complex<float>> stft(
+nc::NDArrayPtr<std::complex<float>> stft(
         const nc::NDArrayF32Ptr& __y,
         const int& __n_fft, // = 2048,
         const int& __hop_length, // = -1,
@@ -52,11 +51,11 @@ nc::NDArrayPtr<Complex<float>> stft(
     int numFrames = 1 + (y.shape()[y.shape().size() - 1] - __n_fft) / hop_length;
     int numFFTOut = 1 + __n_fft / 2;
 
-    nc::NDArrayPtr<Complex<float>> stft_mat = nc::NDArrayPtr<Complex<float>>(new nc::NDArray<Complex<float>>({numFrames, numFFTOut}));
+    nc::NDArrayPtr<std::complex<float>> stft_mat = nc::NDArrayPtr<std::complex<float>>(new nc::NDArray<std::complex<float>>({numFrames, numFFTOut}));
 
     vkfft::FFTReal rfft(__n_fft);
 
-    Complex<float> * ptr_stft_mat = stft_mat.data();
+    std::complex<float> * ptr_stft_mat = stft_mat.data();
     float * ptr_frame = y.data();
 
     kiss_fft_scalar_t * tmp_ri = (kiss_fft_scalar_t *)nc::alignedMalloc(32, __n_fft * sizeof(kiss_fft_scalar_t));
@@ -71,8 +70,8 @@ nc::NDArrayPtr<Complex<float>> stft(
         rfft.forward(tmp_ri, tmp_co);
 
         for (auto j = 0; j < numFFTOut; j++) {
-            ptr_stft_mat[j].r = tmp_co[j * 2 + 0];
-            ptr_stft_mat[j].i = tmp_co[j * 2 + 1];
+            ptr_stft_mat[j].real(tmp_co[j * 2 + 0]);
+            ptr_stft_mat[j].imag(tmp_co[j * 2 + 1]);
         }
 
         ptr_stft_mat += numFFTOut;
@@ -85,7 +84,7 @@ nc::NDArrayPtr<Complex<float>> stft(
     return stft_mat.T();
 }
 
-nc::NDArrayPtr<Complex<double>> stft(
+nc::NDArrayPtr<std::complex<double>> stft(
         const nc::NDArrayF64Ptr& __y,
         const int& __n_fft, // = 2048,
         const int& __hop_length, // = -1,
@@ -123,11 +122,11 @@ nc::NDArrayPtr<Complex<double>> stft(
     int numFrames = 1 + (y.shape()[y.shape().size() - 1] - __n_fft) / hop_length;
     int numFFTOut = 1 + __n_fft / 2;
 
-    nc::NDArrayPtr<Complex<double>> stft_mat = nc::NDArrayPtr<Complex<double>>(new nc::NDArray<Complex<double>>({numFrames, numFFTOut}));
+    nc::NDArrayPtr<std::complex<double>> stft_mat = nc::NDArrayPtr<std::complex<double>>(new nc::NDArray<std::complex<double>>({numFrames, numFFTOut}));
 
     vkfft::FFTReal rfft(__n_fft);
 
-    Complex<double> * ptr_stft_mat = stft_mat.data();
+    std::complex<double> * ptr_stft_mat = stft_mat.data();
     double * ptr_frame = y.data();
 
     kiss_fft_scalar_t * tmp_ri = (kiss_fft_scalar_t *)nc::alignedMalloc(32, __n_fft * sizeof(kiss_fft_scalar_t));
@@ -142,8 +141,8 @@ nc::NDArrayPtr<Complex<double>> stft(
         rfft.forward(tmp_ri, tmp_co);
 
         for (auto j = 0; j < numFFTOut; j++) {
-            ptr_stft_mat[j].r = tmp_co[j * 2 + 0];
-            ptr_stft_mat[j].i = tmp_co[j * 2 + 1];
+            ptr_stft_mat[j].real(tmp_co[j * 2 + 0]);
+            ptr_stft_mat[j].imag(tmp_co[j * 2 + 1]);
         }
 
         ptr_stft_mat += numFFTOut;
@@ -173,21 +172,24 @@ void _spectrogram(
     else {
         auto tmp = stft(__y, __n_fft, __hop_length, __win_length, __window, __center, __pad_mode);
         auto S = nc::NDArrayF32Ptr(new nc::NDArrayF32(tmp.shape()));
-        Complex<float> * ptr_tmp = tmp.data();
+        std::complex<float> * ptr_tmp = tmp.data();
         float * ptr_S = S.data();
         if (__power == 1) {
             for (auto i = 0; i < tmp.elemCount(); i++) {
-                ptr_S[i] = std::sqrt( ptr_tmp[i].r * ptr_tmp[i].r + ptr_tmp[i].i * ptr_tmp[i].i );
+                ptr_S[i] = std::sqrt( ptr_tmp[i].real() * ptr_tmp[i].real() + ptr_tmp[i].imag() * ptr_tmp[i].imag() );
             }
         }
         else if (__power == 2) {
             for (auto i = 0; i < tmp.elemCount(); i++) {
-                ptr_S[i] = ptr_tmp[i].r * ptr_tmp[i].r + ptr_tmp[i].i * ptr_tmp[i].i;
+                // ptr_S[i] = ptr_tmp[i].r * ptr_tmp[i].r + ptr_tmp[i].i * ptr_tmp[i].i;
+                ptr_S[i] = ptr_tmp[i].real() * ptr_tmp[i].real() + ptr_tmp[i].imag() * ptr_tmp[i].imag();
             }
         }
         else {
             for (auto i = 0; i < tmp.elemCount(); i++) {
-                ptr_S[i] = std::pow(std::sqrt( ptr_tmp[i].r * ptr_tmp[i].r + ptr_tmp[i].i * ptr_tmp[i].i ), __power);
+                // ptr_S[i] = std::pow(std::sqrt( ptr_tmp[i].r * ptr_tmp[i].r + ptr_tmp[i].i * ptr_tmp[i].i ), __power);
+                ptr_S[i] = std::sqrt( ptr_tmp[i].real() * ptr_tmp[i].real() + ptr_tmp[i].imag() * ptr_tmp[i].imag() );
+                ptr_S[i] = std::pow(ptr_S[i], __power);
             }
         }
         __S = S;

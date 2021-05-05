@@ -5,6 +5,45 @@
 
 namespace vkfft {
 
+void fft_forward(unsigned int un, const std::complex<kiss_fft_scalar_t> *ci, std::complex<kiss_fft_scalar_t> *co) {
+    int n(un);
+    vamp_kiss_fft_cfg c = vamp_kiss_fft_alloc(n, false, 0, 0);
+    vamp_kiss_fft_cpx *in = new vamp_kiss_fft_cpx[n];
+    vamp_kiss_fft_cpx *out = new vamp_kiss_fft_cpx[n];
+    for (int i = 0; i < n; ++i) {
+        in[i].r = ci[i].real();
+        in[i].i = ci[i].imag();
+    }
+    vamp_kiss_fft(c, in, out);
+    for (int i = 0; i < n; ++i) {
+        co[i].real(out[i].r);
+        co[i].imag(out[i].i);
+    }
+    vamp_kiss_fft_free(c);
+    delete[] in;
+    delete[] out;
+}
+
+void fft_inverse(unsigned int un, const std::complex<kiss_fft_scalar_t> *ci, std::complex<kiss_fft_scalar_t> *co) {
+    int n(un);
+    vamp_kiss_fft_cfg c = vamp_kiss_fft_alloc(n, true, 0, 0);
+    vamp_kiss_fft_cpx *in = new vamp_kiss_fft_cpx[n];
+    vamp_kiss_fft_cpx *out = new vamp_kiss_fft_cpx[n];
+    for (int i = 0; i < n; ++i) {
+        in[i].r = ci[i].real();
+        in[i].i = ci[i].imag();
+    }
+    vamp_kiss_fft(c, in, out);
+    kiss_fft_scalar_t scale = 1.0 / double(n);
+    for (int i = 0; i < n; ++i) {
+        co[i].imag(out[i].r * scale);
+        co[i].imag(out[i].i * scale);
+    }
+    vamp_kiss_fft_free(c);
+    delete[] in;
+    delete[] out;
+}
+
 void fft_forward(unsigned int un, const kiss_fft_scalar_t *ri, const kiss_fft_scalar_t *ii, kiss_fft_scalar_t *ro, kiss_fft_scalar_t *io) {
     int n(un);
     vamp_kiss_fft_cfg c = vamp_kiss_fft_alloc(n, false, 0, 0);

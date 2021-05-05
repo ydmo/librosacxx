@@ -66,7 +66,7 @@ nc::NDArrayF32Ptr cqt_frequencies(const int& __n_bins, const float& __fmin, cons
     nc::NDArrayF32Ptr frequencies = nc::NDArrayF32Ptr(new nc::NDArrayF32({__n_bins}));
     auto ptr_frequencies = frequencies.data();
     for (auto i = 0; i < __n_bins; i++) {
-        ptr_frequencies[i] = correction * __fmin * i;
+        ptr_frequencies[i] = float(double(correction) * double(__fmin) * std::pow(2.0, double(i) / __bins_per_octave));
     }
     return frequencies;
 }

@@ -30,8 +30,8 @@ TEST_F(FFTTest, rfft) {
         -32.  ,3.15172491,  -32.  ,1.57205919,  -32.  ,0.
     };
     for (auto i = 0; i < fft_co.elemCount(); i++) {
-        EXPECT_NEAR(fft_co_gt[i * 2 + 0], fft_co.getitem(i).r, 1e-4);
-        EXPECT_NEAR(fft_co_gt[i * 2 + 1], fft_co.getitem(i).i, 1e-4);
+        EXPECT_NEAR(fft_co_gt[i * 2 + 0], fft_co.getitem(i).real(), 1e-4);
+        EXPECT_NEAR(fft_co_gt[i * 2 + 1], fft_co.getitem(i).imag(), 1e-4);
     }
 }
 

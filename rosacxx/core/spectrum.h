@@ -9,7 +9,7 @@
 namespace rosacxx {
 namespace core {
 
-nc::NDArrayPtr<complex::Complex<float>> stft(
+nc::NDArrayPtr<std::complex<float>> stft(
         const nc::NDArrayF32Ptr&        y,
         const int&                      n_fft = 2048,
         const int&                      hop_length = -1,
@@ -19,7 +19,7 @@ nc::NDArrayPtr<complex::Complex<float>> stft(
         const char *                    pad_mode = "reflect"
     );
 
-nc::NDArrayPtr<complex::Complex<double>> stft(
+nc::NDArrayPtr<std::complex<double>> stft(
         const nc::NDArrayF64Ptr&        y,
         const int&                      n_fft = 2048,
         const int&                      hop_length = -1,

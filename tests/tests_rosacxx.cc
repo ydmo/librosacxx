@@ -8,6 +8,7 @@
 #include <rosacxx/core/spectrum.h>
 #include <rosacxx/core/audio.h>
 #include <rosacxx/core/constantq.h>
+#include <rosacxx/feature/spectral.h>
 
 #include "tests_data.h"
 
@@ -837,7 +838,28 @@ TEST_F(ROSACXXTest, test_0x0b_cqt) { // CQT is the special case of cqt with gamm
 
     EXPECT_EQ(C.shape(), C_pred.shape());//, true);
     for (auto i = 0; i < C.elemCount(); i++) {
-        EXPECT_NEAR(C.getitem(i).real(), C_pred.getitem(i).real(), 3e-5);
-        EXPECT_NEAR(C.getitem(i).imag(), C_pred.getitem(i).imag(), 3e-5);
+        EXPECT_NEAR(C.getitem(i).real(), C_pred.getitem(i).real(), 1e-4);
+        EXPECT_NEAR(C.getitem(i).imag(), C_pred.getitem(i).imag(), 1e-4);
+    }
+}
+
+TEST_F(ROSACXXTest, test_0x0c_chroma_cqt) {
+    using namespace tests::ROSACXXTest::chroma_cqt;
+    nc::NDArrayF32Ptr y = nc::NDArrayF32Ptr(new nc::NDArrayF32({y_len}));
+    for (auto i = 0; i < y_len; i++) {
+        *y.at(i) = float(y_dat[i]);
+    }
+
+    std::vector<int> chromaShape(chroma_dims);
+    for (auto i = 0; i < chroma_dims; i++) {
+        chromaShape[i] = chroma_shape[i];
+    }
+    nc::NDArrayF32Ptr chroma = nc::NDArrayF32Ptr(new nc::NDArrayF32(chromaShape));
+
+    auto chroma_pred = rosacxx::feature::chroma_cqt(y, y_sr, nullptr, hop_lenght);
+
+    EXPECT_EQ(chroma.shape(), chroma_pred.shape());//, true);
+    for (auto i = 0; i < chroma.elemCount(); i++) {
+        EXPECT_NEAR(chroma.getitem(i), chroma_pred.getitem(i), 1e-4);
     }
 }

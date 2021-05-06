@@ -895,19 +895,45 @@ public: // dynamic methods .....
     }
 
     NDArrayPtr dot(const NDArrayPtr& __other) const {
-        if (get()->_shape.size() == 1 && __other.shape().size() == 1) {
-            if (get()->_shape[0] != get()->_shape[0]) {
+        auto _data = get()->_data;
+        auto _shape = get()->_shape;
+        // --------
+        if (_shape.size() == 1 && __other.shape().size() == 1) {
+            if (_shape[0] != _shape[0]) {
                 throw std::runtime_error("invalid shape");
             }
             DType sum = 0;
-            for (auto i = 0; i < get()->_shape[0]; i++) {
-                sum += (get()->_data[i] * __other->_data[i]);
+            for (auto i = 0; i < _shape[0]; i++) {
+                sum += (_data[i] * __other->_data[i]);
             }
             auto ptr = NDArrayPtr(new NDArray<DType>({1}, sum));
             return ptr;
         }
-        else if (get()->_shape.size() == 2 && __other.shape().size() == 2) {
+        else if (_shape.size() == 2 && __other.shape().size() == 2) {
+            NDArrayPtr B = __other;
+            assert(dims() == 2);
+            assert(B.dims() == 2);
+            assert(_shape[1] == B.shape()[0]);
+            int M = _shape[0];
+            int K = _shape[1];
+            int N = B.shape()[1];
 
+            NDArrayPtr<DType> C = NDArrayPtr<DType>(new NDArray<DType>({M, N}));
+            auto ptr_C = C.data();
+            auto ptr_A = _data;
+            auto ptr_B = B.data();
+
+            #pragma omp parallel for
+            for(int i = 0; i < M; ++i) {
+                for(int k = 0; k < K; ++k){
+                    DType A_PART = ptr_A[i*K+k];
+                    for(int j = 0; j < N; ++j){
+                        ptr_C[i*N+j] += A_PART * ptr_B[k*N+j];
+                    }
+                }
+            }
+
+            return C;
         }
         else {
             throw std::runtime_error("Not implemented error");

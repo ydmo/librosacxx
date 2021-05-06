@@ -22,7 +22,7 @@ namespace feature {
 /// @param C                | NDArrayF32::Ptr | Shape=(d, t), a pre-computed constant-Q spectrogram
 /// @param hop_length       | int           | Number of samples between successive chroma frames
 /// @param fmin             | float *       | minimum frequency to analyze in the CQT. Default: `C1 ~= 32.7 Hz`
-/// @param norm             | int           | Column-wise normalization of the chromagram
+/// @param norm             | float         | Column-wise normalization of the chromagram
 /// @param threshold        | float         | Pre-normalization energy threshold.  Values below the threshold are discarded, resulting in a sparse chromagram
 /// @param tuning           | float         | Deviation (in fractions of a CQT bin) from A440 tuning
 /// @param n_chroma         | int           | Number of chroma bins to produce
@@ -37,10 +37,10 @@ inline nc::NDArrayF32Ptr chroma_cqt(
         const float&                __sr =                22050,
         const nc::NDArrayF32Ptr&    __C =                 nullptr,
         const int&                  __hop_length =        512,
-        const float&                __fmin =              0,
-        const int&                  __norm =              0,
+        const float&                __fmin =              INFINITY,
+        const float&                __norm =              INFINITY,
         const float&                __threshold =         0,
-        const float&                __tuning =            0,
+        const float&                __tuning =            INFINITY,
         const int&                  __n_chroma =          12,
         const int&                  __n_octaves =         7,
         const nc::NDArrayF32Ptr&    __window =            nullptr,
@@ -114,8 +114,31 @@ inline nc::NDArrayF32Ptr chroma_cqt(
         }
     }
 
-    if (__norm != INFINITY) {
-        // chroma = util.normalize(chroma, norm=norm, axis=0)
+    // chroma = util.normalize(chroma, norm=norm, axis=0)
+    if (__norm == INFINITY) {
+        double threshold = FLT_MIN; // 1.1754944e-38
+        auto mag = nc::abs(chroma);
+        // length = np.max(mag, axis=axis, keepdims=True)
+        std::vector<float> maxs(mag.shape()[1], -FLT_MAX);
+        auto ptr_mag = mag.data();
+        for (auto r = 0; r < mag.shape()[0]; r++) {
+            for (auto c = 0; c < mag.shape()[1]; c++) {
+                maxs[c] = std::max(maxs[c], *ptr_mag++);
+            }
+        }
+        for (auto c = 0; c < mag.shape()[1]; c++) {
+            if (maxs[c] < threshold) maxs[c] = 1.0;
+        }
+        for (auto r = 0; r < mag.shape()[0]; r++) {
+            auto ptr_Cr = chroma.at(r, 0);
+            for (auto c = 0; c < mag.shape()[1]; c++) {
+                ptr_Cr[c] /= maxs[c];
+            }
+        }
+    }
+    else {
+        throw std::runtime_error("Not implemented.");
+
     }
 
     return chroma;

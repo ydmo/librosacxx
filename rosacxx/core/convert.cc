@@ -27,6 +27,10 @@ float hz_to_octs(const float& freq, const float& tuning, const int& bins_per_oct
     return std::log2(freq / (A440 / 16));
 }
 
+float hz_to_midi(const float& frequencies) {
+    return 12 * (std::log2(frequencies) - std::log2(440.0)) + 69;
+}
+
 nc::NDArrayF32Ptr hz_to_octs(const nc::NDArrayF32Ptr& freq, const float& tuning, const int& bins_per_octave) {
     auto octs = nc::NDArrayF32Ptr(new nc::NDArrayF32(freq.shape()));
     float *ptr_freq = freq.data();
@@ -55,6 +59,13 @@ nc::NDArrayF32Ptr midi_to_hz(const nc::NDArrayS32Ptr& midi) {
         ptr_hz[i] = midi_to_hz(ptr_midi[i]);
     }
     return hz;
+}
+
+nc::NDArrayF32Ptr hz_to_midi(const nc::NDArrayF32Ptr& freq) {
+    nc::NDArrayF32Ptr midi = nc::NDArrayF32Ptr(new nc::NDArrayF32(freq.shape()));
+    for (auto i = 0; i < midi.elemCount(); i++) {
+        *midi.at(i) = hz_to_midi(freq.getitem(i));
+    }
 }
 
 nc::NDArrayF32Ptr fft_frequencies(const float& __sr, const int& __n_fft) {

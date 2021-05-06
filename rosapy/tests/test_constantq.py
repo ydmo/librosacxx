@@ -18,7 +18,7 @@ except KeyError:
 import librosa
 from librosa import audio
 from librosa.core.fft import get_fftlib
-from librosa.core.convert import cqt_frequencies, note_to_hz
+from librosa.core.convert import cqt_frequencies, note_to_hz, hz_to_midi
 from librosa.core.spectrum import stft, istft
 from librosa.core.pitch import estimate_tuning
 from librosa import filters
@@ -32,6 +32,27 @@ from test_core import srand
 
 import resampy
 import scipy
+
+def __make_signal(sr, duration, fmin="C1", fmax="C8"):
+    """ Generates a linear sine sweep """
+
+    if fmin is None:
+        fmin = 0.01
+    else:
+        fmin = librosa.note_to_hz(fmin) / sr
+
+    if fmax is None:
+        fmax = 0.5
+    else:
+        fmax = librosa.note_to_hz(fmax) / sr
+
+    return np.sin(
+        np.cumsum(
+            2
+            * np.pi
+            * np.logspace(np.log10(fmin), np.log10(fmax), num=int(duration * sr))
+        )
+    )
 
 def __sparsify_rows(x, quantile=0.01, dtype=None):
     if x.ndim == 1:
@@ -384,7 +405,7 @@ def __cqt_response(y, n_fft, hop_length, fft_basis, mode, dtype=None):
     # And filter response energy
     return fft_basis.dot(D)
 
-def vqt(
+def __vqt(
     y,
     sr=22050,
     hop_length=512,
@@ -551,7 +572,7 @@ def vqt(
 
     return V
 
-def cqt(
+def __cqt(
     y,
     sr=22050,
     hop_length=512,
@@ -570,7 +591,7 @@ def cqt(
     ):
 
     # CQT is the special case of VQT with gamma=0
-    return vqt(
+    return __vqt(
         y=y,
         sr=sr,
         hop_length=hop_length,
@@ -589,7 +610,65 @@ def cqt(
         dtype=dtype,
     )
 
-def chroma_cqt(
+def __cq_to_chroma(
+    n_input,
+    bins_per_octave=12,
+    n_chroma=12,
+    fmin=None,
+    window=None,
+    base_c=True,
+    dtype=np.float32,
+    ):
+
+    # How many fractional bins are we merging?
+    n_merge = float(bins_per_octave) / n_chroma
+
+    if fmin is None:
+        fmin = note_to_hz("C1")
+
+    if np.mod(n_merge, 1) != 0:
+        raise ParameterError(
+            "Incompatible CQ merge: "
+            "input bins must be an "
+            "integer multiple of output bins."
+        )
+
+    # Tile the identity to merge fractional bins
+    cq_to_ch = np.repeat(np.eye(n_chroma), n_merge, axis=1)
+
+    # Roll it left to center on the target bin
+    cq_to_ch = np.roll(cq_to_ch, -int(n_merge // 2), axis=1)
+
+    # How many octaves are we repeating?
+    n_octaves = np.ceil(np.float(n_input) / bins_per_octave)
+
+    # Repeat and trim
+    cq_to_ch = np.tile(cq_to_ch, int(n_octaves))[:, :n_input]
+
+    # What's the note number of the first bin in the CQT?
+    # midi uses 12 bins per octave here
+    midi_0 = np.mod(hz_to_midi(fmin), 12)
+
+    if base_c:
+        # rotate to C
+        roll = midi_0
+    else:
+        # rotate to A
+        roll = midi_0 - 9
+
+    # Adjust the roll in terms of how many chroma we want out
+    # We need to be careful with rounding here
+    roll = int(np.round(roll * (n_chroma / 12.0)))
+
+    # Apply the roll
+    cq_to_ch = np.roll(cq_to_ch, roll, axis=0).astype(dtype)
+
+    if window is not None:
+        cq_to_ch = scipy.signal.convolve(cq_to_ch, np.atleast_2d(window), mode="same")
+
+    return cq_to_ch
+
+def __chroma_cqt(
     y=None,
     sr=22050,
     C=None,
@@ -605,7 +684,7 @@ def chroma_cqt(
     cqt_mode="full",
     ):
 
-    cqt_func = {"full": cqt, "hybrid": cqt}
+    cqt_func = {"full": __cqt, "hybrid": __cqt}
 
     if bins_per_octave is None:
         bins_per_octave = n_chroma
@@ -630,7 +709,7 @@ def chroma_cqt(
         )
 
     # Map to chroma
-    cq_to_chr = filters.cq_to_chroma(
+    cq_to_chr = __cq_to_chroma(
         C.shape[0],
         bins_per_octave=bins_per_octave,
         n_chroma=n_chroma,
@@ -663,9 +742,9 @@ def gen_test_vqt_data():
     sparsity = 0.01
     hop_length = 512
 
-    y = make_signal(sr, 2.0)
+    y = __make_signal(sr, 2.0)
 
-    C = vqt(
+    C = __vqt(
         y=y,
         sr=sr,
         hop_length=hop_length,
@@ -708,8 +787,8 @@ def gen_test_vqt_data():
         fp.write(contents)
     # end-with
 
+    return True
 # </gen_test_vqt_data>
-
 
 # <gen_test_cqt_data/>
 def gen_test_cqt_data():
@@ -725,9 +804,9 @@ def gen_test_cqt_data():
     sparsity = 0.01
     hop_length = 512
 
-    y = make_signal(sr, 2.0)
+    y = __make_signal(sr, 60.0)
 
-    V = vqt(
+    V = __vqt(
         y=y,
         sr=sr,
         hop_length=hop_length,
@@ -786,10 +865,66 @@ def gen_test_cqt_data():
         fp.write(contents)
     # end-with
 
+    return True
 # </gen_test_cqt_data>
 
+# <gen_test_chroma_cqt_data/>
+def gen_test_chroma_cqt_data(
+    song_path = "/home/yuda/Documents/Datasets/heshan/set02_20210331/professional/spleeter_outputs/小白船/vocals.wav",
+    sr = 22050, 
+    hop_length = 1024
+    ):
+    
+    y, sr = librosa.load(
+        song_path,
+        sr = sr,
+        mono = True
+        )
+    y = y[int(sr*20):int(sr*30)]
+    print("y.shape = ", y.shape)
+    print("sr = ", sr)
+    
+    chroma = __chroma_cqt(
+        y=y, sr=sr, hop_length=hop_length)
+    print("chroma.shape = ", chroma.shape)
+
+    contents = """
+    #ifndef tests_data_chroma_cqt
+    #define tests_data_chroma_cqt
+    namespace tests {{
+    namespace ROSACXXTest {{
+    namespace chroma_cqt {{
+    // --------
+    constexpr float y_sr = {0};
+    constexpr int   y_len = {1};
+    constexpr float y_dat[y_len] = {2};
+    constexpr int   hop_lenght = {3};
+    constexpr int   chroma_dims = {4};
+    constexpr int   chroma_shape[chroma_dims] = {5};
+    constexpr float chroma_dat[{6}] = {7};
+    // --------
+    }}
+    }}  
+    }}
+    #endif // tests_data_chroma_cqt
+    """.format(
+        sr, # 0
+        y.size, # 1
+        str(y.tolist()).replace('[', '{').replace(']', '}'), # 2
+        hop_length, # 3
+        len(chroma.shape), # 4
+        str(list(chroma.shape)).replace('[', '{').replace(']', '}'), # 5
+        chroma.size, # 6
+        str(chroma.reshape(-1).tolist()).replace('[', '{').replace(']', '}'), # 7
+        )
+    with open("/home/yuda/Documents/Projects/raspai/song_scoring/heart/scorpio/3rd/librosacxx/tests/tests_data_chroma_cqt.h", "w+") as fp:
+        fp.write(contents)
+    # end-with
+    
+# </gen_test_chroma_cqt_data>
+
 if __name__ == '__main__':
-    gen_test_cqt_data()
+    gen_test_chroma_cqt_data()
     
 
     

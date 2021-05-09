@@ -28,7 +28,7 @@ import numpy as np
 
 import pytest
 
-from test_core import srand
+from .test_core import srand
 
 import resampy
 import scipy
@@ -870,7 +870,8 @@ def gen_test_cqt_data():
 
 # <gen_test_chroma_cqt_data/>
 def gen_test_chroma_cqt_data(
-    song_path = "/home/yuda/Documents/Datasets/heshan/set02_20210331/professional/spleeter_outputs/小白船/vocals.wav",
+    # song_path = "/home/yuda/Documents/Datasets/heshan/set02_20210331/professional/spleeter_outputs/小白船/vocals.wav"
+    song_path = "D:\DataSets\set02_20210331\professional\spleeter_outputs\小白船\\vocals.wav",
     sr = 22050, 
     hop_length = 1024
     ):
@@ -894,7 +895,7 @@ def gen_test_chroma_cqt_data(
     namespace tests {{
     namespace ROSACXXTest {{
     namespace chroma_cqt {{
-    // --------
+    // -------- //
     constexpr float y_sr = {0};
     constexpr int   y_len = {1};
     constexpr float y_dat[y_len] = {2};
@@ -902,7 +903,7 @@ def gen_test_chroma_cqt_data(
     constexpr int   chroma_dims = {4};
     constexpr int   chroma_shape[chroma_dims] = {5};
     constexpr float chroma_dat[{6}] = {7};
-    // --------
+    // -------- //
     }}
     }}  
     }}
@@ -917,13 +918,17 @@ def gen_test_chroma_cqt_data(
         chroma.size, # 6
         str(chroma.reshape(-1).tolist()).replace('[', '{').replace(']', '}'), # 7
         )
-    with open("/home/yuda/Documents/Projects/raspai/song_scoring/heart/scorpio/3rd/librosacxx/tests/tests_data_chroma_cqt.h", "w+") as fp:
+    with open(
+        # "/home/yuda/Documents/Projects/raspai/song_scoring/heart/scorpio/3rd/librosacxx/tests/tests_data_chroma_cqt.h", 
+        "./tests/tests_data_chroma_cqt.h", 
+        "w+") as fp:
         fp.write(contents)
     # end-with
     
 # </gen_test_chroma_cqt_data>
 
 if __name__ == '__main__':
+    # python -m rosapy.tests.test_constantq
     gen_test_chroma_cqt_data()
     
 

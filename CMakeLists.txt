@@ -1,12 +1,17 @@
 cmake_minimum_required(VERSION 3.0.0)
 
+add_compile_options(-std=c++11)
+add_compile_options(-pthread)
+
 project(rosacxx LANGUAGES CXX C)
 
 option(BUILD_ROSACXX_TESTS                      "Build librosacxx test."                                                ON)
 option(BUILD_ROSACXX_FFT_WITH_SINGLE_PRECISION  "Build librosacxx fft libraries using single precision(32bit-float)."   ON)
 
 include_directories( ${CMAKE_CURRENT_LIST_DIR} )
-include_directories( ${CMAKE_CURRENT_LIST_DIR}/../half/include/half )
+include_directories( ${CMAKE_CURRENT_LIST_DIR}/../googletest/ )
+include_directories( ${CMAKE_CURRENT_LIST_DIR}/../googletest/include/ )
+include_directories( ${CMAKE_CURRENT_LIST_DIR}/../googletest/src/ )
 
 set(
     ROSACXX_SRCS
@@ -71,9 +76,12 @@ set_target_properties(rosacxx PROPERTIES OUTPUT_NAME "rosacxx")
 set_target_properties(rosacxx PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 
 if (BUILD_ROSACXX_TESTS)
-    add_compile_options(-std=c++11)
-    add_compile_options(-pthread)
-    find_package(GTest REQUIRED)
+    set(GTEST_SRCS
+        ${CMAKE_CURRENT_LIST_DIR}/../googletest/src/gtest-all.cc
+        )
+    add_library(gtest STATIC ${GTEST_SRCS})
+    set_target_properties(gtest PROPERTIES OUTPUT_NAME "gtest")
+    set_target_properties(gtest PROPERTIES CLEAN_DIRECT_OUTPUT 1)
     add_executable(
         rosacxx_tests
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_data.h
@@ -82,9 +90,7 @@ if (BUILD_ROSACXX_TESTS)
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_numcxx.cc
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_rosacxx.cc
         )
-    target_link_libraries(rosacxx_tests PUBLIC rosacxx)
-    set(GTEST_LIBRARIES gtest gtest_main pthread)
-    target_link_libraries(rosacxx_tests PUBLIC ${GTEST_LIBRARIES})
+    target_link_libraries(rosacxx_tests PUBLIC rosacxx gtest)
 endif()
 
 add_definitions(-DUSE_VAMP_KISS_FFT)
@@ -93,4 +99,3 @@ if (BUILD_ROSACXX_FFT_WITH_SINGLE_PRECISION)
 else()
     add_definitions(-DROSACXX_FFT_PRECISION_F32=0)
 endif()
-

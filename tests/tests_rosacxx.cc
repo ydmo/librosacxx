@@ -634,6 +634,7 @@ TEST_F(ROSACXXTest, test_0x05_tone) {
 }
 
 TEST_F(ROSACXXTest, test_0x06_piptrack) {
+#   ifndef _WIN32
 
     const float freq = 440.f;
     const float sr = 22050.f;
@@ -697,6 +698,7 @@ TEST_F(ROSACXXTest, test_0x06_piptrack) {
         }
         EXPECT_LE(float(big_err_cnt) / mags_gt.elemCount(), 1e-3);
     }
+#   endif // !_WIN32
 }
 
 TEST_F(ROSACXXTest, test_0x07_estimate_tuning) {

@@ -10,6 +10,11 @@
 #include <rosacxx/core/convert.h>
 #include <rosacxx/util/utils.h>
 
+#ifdef _WIN32
+#   define _USE_MATH_DEFINES 1
+#   include <math.h>
+#endif // _WIN32
+
 namespace rosacxx {
 namespace filters {
 

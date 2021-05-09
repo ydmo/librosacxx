@@ -5,6 +5,11 @@
 #include <rosacxx/numcxx/numcxx.h>
 #include <rosacxx/resamcxx/data.h>
 
+#ifdef _WIN32
+#   define _USE_MATH_DEFINES 1
+#   include <math.h>
+#endif // _WIN32
+
 namespace resam {
 
 template<typename DType>

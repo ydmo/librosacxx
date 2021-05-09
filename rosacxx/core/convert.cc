@@ -66,6 +66,7 @@ nc::NDArrayF32Ptr hz_to_midi(const nc::NDArrayF32Ptr& freq) {
     for (auto i = 0; i < midi.elemCount(); i++) {
         *midi.at(i) = hz_to_midi(freq.getitem(i));
     }
+    return midi;
 }
 
 nc::NDArrayF32Ptr fft_frequencies(const float& __sr, const int& __n_fft) {

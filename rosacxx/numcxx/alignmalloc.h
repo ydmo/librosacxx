@@ -19,7 +19,7 @@ inline size_t alignUp(const size_t& __size, const size_t& __align) {
 
 inline void * alignedMalloc(size_t __alignment, size_t __size) {
 #   ifdef _WIN32
-    return _alignedMalloc(__alignment, alignUp(__size, __alignment));
+    return _aligned_malloc(alignUp(__size, __alignment), __alignment);
 #   else
     void *p = NULL;
     if (__alignment) {
@@ -38,7 +38,7 @@ inline void * alignedMalloc(size_t __alignment, size_t __size) {
 inline void * alignedCalloc(size_t __alignment, size_t __size) {
 #   ifdef _WIN32
     size_t alignedSize = alignUp(__size, __alignment);
-    void * ptr = _alignedMalloc(__alignment, alignedSize);
+    void * ptr = _aligned_malloc(alignedSize, __alignment);
     memset(ptr, 0x00, alignedSize);
     return ptr;
 #   else

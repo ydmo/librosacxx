@@ -18,8 +18,8 @@ except KeyError:
 import librosa
 from librosa import audio
 from librosa.core.fft import get_fftlib
-from librosa.core.convert import cqt_frequencies, note_to_hz, hz_to_midi
-from librosa.core.spectrum import stft, istft
+from librosa.core.convert import cqt_frequencies, note_to_hz, hz_to_midi, hz_to_octs, fft_frequencies
+from librosa.core.spectrum import stft, istft, _spectrogram
 from librosa.core.pitch import estimate_tuning
 from librosa import filters
 from librosa import util
@@ -32,6 +32,136 @@ from .test_core import srand
 
 import resampy
 import scipy
+
+def _pitch_tuning(frequencies, resolution=0.01, bins_per_octave=12):
+    
+    frequencies = np.atleast_1d(frequencies)
+
+    # Trim out any DC components
+    frequencies = frequencies[frequencies > 0]
+
+    if not np.any(frequencies):
+        warnings.warn("Trying to estimate tuning from empty frequency set.")
+        return 0.0
+
+    # Compute the residual relative to the number of bins
+    residual = np.mod(bins_per_octave * hz_to_octs(frequencies), 1.0)
+
+    # Are we on the wrong side of the semitone?
+    # A residual of 0.95 is more likely to be a deviation of -0.05
+    # from the next tone up.
+    residual[residual >= 0.5] -= 1.0
+
+    bins = np.linspace(-0.5, 0.5, int(np.ceil(1.0 / resolution)) + 1)
+
+    counts, tuning = np.histogram(residual, bins)
+
+    # return the histogram peak
+    return tuning[np.argmax(counts)]
+
+def _piptrack(
+    y=None,
+    sr=22050,
+    S=None,
+    n_fft=2048,
+    hop_length=None,
+    fmin=150.0,
+    fmax=4000.0,
+    threshold=0.1,
+    win_length=None,
+    window="hann",
+    center=True,
+    pad_mode="reflect",
+    ref=None,
+    ):
+
+    # Check that we received an audio time series or STFT
+    S, n_fft = _spectrogram(
+        y=y,
+        S=S,
+        n_fft=n_fft,
+        hop_length=hop_length,
+        win_length=win_length,
+        window=window,
+        center=center,
+        pad_mode=pad_mode,
+    )
+
+    import pdb; pdb.set_trace()
+
+    # Make sure we're dealing with magnitudes
+    S = np.abs(S)
+
+    # Truncate to feasible region
+    fmin = np.maximum(fmin, 0)
+    fmax = np.minimum(fmax, float(sr) / 2)
+
+    fft_freqs = fft_frequencies(sr=sr, n_fft=n_fft)
+
+    # Do the parabolic interpolation everywhere,
+    # then figure out where the peaks are
+    # then restrict to the feasible range (fmin:fmax)
+    avg = 0.5 * (S[2:] - S[:-2])
+
+    shift = 2 * S[1:-1] - S[2:] - S[:-2]
+
+    # Suppress divide-by-zeros.
+    # Points where shift == 0 will never be selected by localmax anyway
+    shift = avg / (shift + (np.abs(shift) < util.tiny(shift)))
+
+    # Pad back up to the same shape as S
+    avg = np.pad(avg, ([1, 1], [0, 0]), mode="constant")
+    shift = np.pad(shift, ([1, 1], [0, 0]), mode="constant")
+
+    dskew = 0.5 * avg * shift
+
+    # Pre-allocate output
+    pitches = np.zeros_like(S)
+    mags = np.zeros_like(S)
+
+    # Clip to the viable frequency range
+    freq_mask = ((fmin <= fft_freqs) & (fft_freqs < fmax)).reshape((-1, 1))
+
+    # Compute the column-wise local max of S after thresholding
+    # Find the argmax coordinates
+    if ref is None:
+        ref = np.max
+
+    if callable(ref):
+        ref_value = threshold * ref(S, axis=0)
+    else:
+        ref_value = np.abs(ref)
+
+    idx = np.argwhere(freq_mask & util.localmax(S * (S > ref_value)))
+
+    # Store pitch and magnitude
+    pitches[idx[:, 0], idx[:, 1]] = (
+        (idx[:, 0] + shift[idx[:, 0], idx[:, 1]]) * float(sr) / n_fft
+    )
+
+    mags[idx[:, 0], idx[:, 1]] = S[idx[:, 0], idx[:, 1]] + dskew[idx[:, 0], idx[:, 1]]
+
+    return pitches, mags
+
+def _estimate_tuning(
+    y=None, sr=22050, S=None, n_fft=2048, resolution=0.01, bins_per_octave=12, **kwargs
+    ):
+    pitch, mag = _piptrack(y=y, sr=sr, S=S, n_fft=n_fft, **kwargs)
+    import pdb; pdb.set_trace()
+
+    # Only count magnitude where frequency is > 0
+    pitch_mask = pitch > 0
+
+    if pitch_mask.any():
+        threshold = np.median(mag[pitch_mask])
+    else:
+        threshold = 0.0
+
+    return _pitch_tuning(
+        pitch[(mag >= threshold) & pitch_mask],
+        resolution=resolution,
+        bins_per_octave=bins_per_octave,
+    )
 
 def __make_signal(sr, duration, fmin="C1", fmax="C8"):
     """ Generates a linear sine sweep """
@@ -438,7 +568,7 @@ def __vqt(
         fmin = note_to_hz("C1")
 
     if tuning is None:
-        tuning = estimate_tuning(y=y, sr=sr, bins_per_octave=bins_per_octave)
+        tuning = _estimate_tuning(y=y, sr=sr, bins_per_octave=bins_per_octave)
 
     if gamma is None:
         gamma = 24.7 * alpha / 0.108

@@ -387,7 +387,7 @@ public: // dynamic methods .....
         std::vector<DType> vec_res(0);
         if (__mask.shape().size() == get()->_shape.size()) {
             for (auto i = 0; i < __mask.elemCount(); i++) {
-                if (__mask.at(i)) vec_res.push_back(get()->_data[i]);
+                if (__mask.getitem(i)) vec_res.push_back(get()->_data[i]);
             }
             if (vec_res.size() == 0) return nullptr;
             auto p = NDArrayPtr(new NDArray<DType>({int(vec_res.size())}));

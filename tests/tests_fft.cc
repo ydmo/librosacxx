@@ -1,3 +1,6 @@
+#define ENABLE_FFT_TESTS 0
+#if ENABLE_FFT_TESTS
+
 #include <iostream>
 #include <gtest/gtest.h>
 #include <rosacxx/core/fft.h>
@@ -34,4 +37,6 @@ TEST_F(FFTTest, rfft) {
         EXPECT_NEAR(fft_co_gt[i * 2 + 1], fft_co.getitem(i).imag(), 1e-4);
     }
 }
+
+#endif // ENABLE_FFT_TESTS
 

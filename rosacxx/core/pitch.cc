@@ -32,6 +32,8 @@ std::vector<nc::NDArrayF32Ptr> piptrack(
 
     _spectrogram(__y, S, n_fft, __hop_length, 1, __win_length, __window, __center, __pad_mode);
 
+    auto vecS = S.toStdVector2D();
+
     // pitch_mask
     float fmin = std::max(__fmin, 0.f);
     float fmax = std::min(__fmax, __sr / 2.f);
@@ -150,9 +152,18 @@ float estimate_tuning(
         float * ref //                  = nullptr
         ) {
 
+    std::cout << "y[0]: \n" << y.getitem(0) << std::endl;
+    std::cout << "y[1]: \n" << y.getitem(1) << std::endl;
+    std::cout << "y[2]: \n" << y.getitem(2) << std::endl;
+
     auto pitch_mag = piptrack(y, sr, S, n_fft, hop_length, fmin, fmax, threshold, win_length, window, center, pad_mode, ref); // pitch, mag = piptrack(y=y, sr=sr, S=S, n_fft=n_fft, **kwargs)
     nc::NDArrayF32Ptr pitch = pitch_mag[0];
     nc::NDArrayF32Ptr mag = pitch_mag[1];
+    
+    // std::cout << "Debug -------------------" << std::endl;
+    // std::cout << "pitch > 0: " << std::endl << (pitch > 0) << std::endl;
+    // std::cout << "pitch[pitch > 0]: " << std::endl << pitch[pitch > 0] << std::endl;
+    // std::vector<std::vector<float>> data_ptich = pitch.toStdVector2D();
 
     nc::NDArrayBoolPtr pitch_mask = pitch > 0;
 

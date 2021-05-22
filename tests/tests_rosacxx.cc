@@ -1,3 +1,6 @@
+#define ENABLE_ROSACXX_TESTS 1
+#if ENABLE_ROSACXX_TESTS
+
 #include <iostream>
 #include <gtest/gtest.h>
 
@@ -17,6 +20,8 @@ protected:
     virtual void TearDown() override { }
     virtual void SetUp() override { }
 };
+
+#if 0
 
 TEST_F(ROSACXXTest, test_0x00_midi_to_hz) {
     std::vector<double> gt = {
@@ -845,6 +850,8 @@ TEST_F(ROSACXXTest, test_0x0b_cqt) { // CQT is the special case of cqt with gamm
     }
 }
 
+#endif // 0
+
 TEST_F(ROSACXXTest, test_0x0c_chroma_cqt) {
     using namespace tests::ROSACXXTest::chroma_cqt;
     nc::NDArrayF32Ptr y = nc::NDArrayF32Ptr(new nc::NDArrayF32({y_len}));
@@ -865,3 +872,5 @@ TEST_F(ROSACXXTest, test_0x0c_chroma_cqt) {
         EXPECT_NEAR(chroma.getitem(i), chroma_pred.getitem(i), 1e-4);
     }
 }
+
+#endif

@@ -1,3 +1,6 @@
+#define ENABLE_NC_TESTS 0
+#if ENABLE_NC_TESTS
+
 #include <iostream>
 #include <gtest/gtest.h>
 #include <rosacxx/numcxx/numcxx.h>
@@ -251,3 +254,4 @@ TEST_F(NCTest, reflect_pad1d) {
     }
 }
 
+#endif //

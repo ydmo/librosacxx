@@ -79,9 +79,10 @@ if (BUILD_ROSACXX_TESTS)
     set(GTEST_SRCS
         ${CMAKE_CURRENT_LIST_DIR}/../googletest/src/gtest-all.cc
         )
-    add_library(rosacxx_gtest STATIC ${GTEST_SRCS})
-    set_target_properties(rosacxx_gtest PROPERTIES OUTPUT_NAME "rosacxx_gtest")
-    set_target_properties(rosacxx_gtest PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+    add_library(googletest STATIC ${GTEST_SRCS})
+    target_include_directories(googletest INTERFACE ${CMAKE_CURRENT_LIST_DIR}/../googletest/src)
+    set_target_properties(googletest PROPERTIES OUTPUT_NAME "googletest")
+    set_target_properties(googletest PROPERTIES CLEAN_DIRECT_OUTPUT 1)
     add_executable(
         rosacxx_tests
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_data.h
@@ -90,7 +91,7 @@ if (BUILD_ROSACXX_TESTS)
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_numcxx.cc
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_rosacxx.cc
         )
-    target_link_libraries(rosacxx_tests PUBLIC rosacxx rosacxx_gtest)
+    target_link_libraries(rosacxx_tests PUBLIC googletest rosacxx pthread)
 endif()
 
 add_definitions(-DUSE_VAMP_KISS_FFT)

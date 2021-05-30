@@ -32,8 +32,6 @@ std::vector<nc::NDArrayF32Ptr> piptrack(
 
     _spectrogram(__y, S, n_fft, __hop_length, 1, __win_length, __window, __center, __pad_mode);
 
-    auto vecS = S.toStdVector2D();
-
     // pitch_mask
     float fmin = std::max(__fmin, 0.f);
     float fmax = std::min(__fmax, __sr / 2.f);
@@ -58,6 +56,8 @@ std::vector<nc::NDArrayF32Ptr> piptrack(
     shift = nc::pad(shift, {{1, 1}, {0, 0}}); // shift = np.pad(shift, ([1, 1], [0, 0]), mode="constant")
 
     auto dskew = .5f * avg * shift; // dskew = 0.5 * avg * shift
+
+    auto vec_dskew = dskew.toStdVector2D();
 
     auto freq_mask = ((fmin <= fft_freqs) & (fft_freqs < fmax)).reshape({-1, 1}); // freq_mask = ((fmin <= fft_freqs) & (fft_freqs < fmax)).reshape((-1, 1))
 

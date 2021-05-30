@@ -1155,6 +1155,20 @@ public: // dynamic methods .....
         return ret;
     }
 
+    std::vector<DType> toStdVector1D() const {
+        auto _data = get()->_data;
+        auto _shape = get()->_shape;
+        // --------
+        assert(_shape.size() == 1);
+        int idx = elemCount();
+        DType * ptr_data = _data;
+        std::vector<DType> ret(0);
+        for (auto r = 0; r < idx; r++) {
+            ret.push_back(*ptr_data++);
+        }
+        return ret;
+    }
+
     std::vector<std::vector<DType>> toStdVector2D() const {
         auto _data = get()->_data;
         auto _shape = get()->_shape;

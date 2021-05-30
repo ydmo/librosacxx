@@ -87,8 +87,6 @@ def _piptrack(
         pad_mode=pad_mode,
     )
 
-    import pdb; pdb.set_trace()
-
     # Make sure we're dealing with magnitudes
     S = np.abs(S)
 
@@ -104,6 +102,8 @@ def _piptrack(
     avg = 0.5 * (S[2:] - S[:-2])
 
     shift = 2 * S[1:-1] - S[2:] - S[:-2]
+
+    import pdb; pdb.set_trace()
 
     # Suppress divide-by-zeros.
     # Points where shift == 0 will never be selected by localmax anyway
@@ -1000,8 +1000,8 @@ def gen_test_cqt_data():
 
 # <gen_test_chroma_cqt_data/>
 def gen_test_chroma_cqt_data(
-    # song_path = "/home/yuda/Documents/Datasets/heshan/set02_20210331/professional/spleeter_outputs/小白船/vocals.wav"
-    song_path = "D:\DataSets\set02_20210331\professional\spleeter_outputs\小白船\\vocals.wav",
+    song_path = "/home/yuda/Documents/Datasets/heshan/set02_20210331/professional/spleeter_outputs/小白船/vocals.wav", 
+    # song_path = "D:\DataSets\set02_20210331\professional\spleeter_outputs\小白船\\vocals.wav",
     sr = 22050, 
     hop_length = 1024
     ):

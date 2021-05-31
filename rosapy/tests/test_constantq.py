@@ -32,6 +32,7 @@ from .test_core import srand
 
 import resampy
 import scipy
+import cv2
 
 def _pitch_tuning(frequencies, resolution=0.01, bins_per_octave=12):
     
@@ -103,8 +104,6 @@ def _piptrack(
 
     shift = 2 * S[1:-1] - S[2:] - S[:-2]
 
-    import pdb; pdb.set_trace()
-
     # Suppress divide-by-zeros.
     # Points where shift == 0 will never be selected by localmax anyway
     shift = avg / (shift + (np.abs(shift) < util.tiny(shift)))
@@ -114,6 +113,9 @@ def _piptrack(
     shift = np.pad(shift, ([1, 1], [0, 0]), mode="constant")
 
     dskew = 0.5 * avg * shift
+
+    # cv2.imshow("dskew", dskew)
+    # cv2.waitKey(0)
 
     # Pre-allocate output
     pitches = np.zeros_like(S)
@@ -141,22 +143,27 @@ def _piptrack(
 
     mags[idx[:, 0], idx[:, 1]] = S[idx[:, 0], idx[:, 1]] + dskew[idx[:, 0], idx[:, 1]]
 
+    # cv2.imshow("pitches", pitches)
+    # cv2.imshow('mags', mags)
+    # cv2.waitKey(0)
+
     return pitches, mags
 
 def _estimate_tuning(
     y=None, sr=22050, S=None, n_fft=2048, resolution=0.01, bins_per_octave=12, **kwargs
     ):
     pitch, mag = _piptrack(y=y, sr=sr, S=S, n_fft=n_fft, **kwargs)
-    import pdb; pdb.set_trace()
 
     # Only count magnitude where frequency is > 0
     pitch_mask = pitch > 0
-
+    
     if pitch_mask.any():
         threshold = np.median(mag[pitch_mask])
     else:
         threshold = 0.0
 
+    freq = pitch[(mag >= threshold) & pitch_mask]
+    
     return _pitch_tuning(
         pitch[(mag >= threshold) & pitch_mask],
         resolution=resolution,

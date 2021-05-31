@@ -53,6 +53,7 @@ set(
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/filters.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/util/utils.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/util/utils.cc
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/util/visualize.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/audio.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/audio.cc
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/constantq.h
@@ -92,6 +93,11 @@ if (BUILD_ROSACXX_TESTS)
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_rosacxx.cc
         )
     target_link_libraries(rosacxx_tests PUBLIC googletest rosacxx pthread)
+    add_definitions(-DROSACXX_TEST=1)
+    # OpenCV Libs ...
+    find_package(OpenCV)
+    target_link_libraries(rosacxx       PUBLIC ${OpenCV_LIBS})
+    target_link_libraries(rosacxx_tests PUBLIC ${OpenCV_LIBS})
 endif()
 
 add_definitions(-DUSE_VAMP_KISS_FFT)

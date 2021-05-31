@@ -2,11 +2,13 @@
 #include <rosacxx/core/convert.h>
 #include <rosacxx/core/spectrum.h>
 
-
-
 #include <memory>
 #include <cmath>
 #include <map>
+
+#if ROSACXX_TEST
+#   include <rosacxx/util/visualize.h>
+#endif
 
 namespace rosacxx {
 namespace core {
@@ -57,30 +59,24 @@ std::vector<nc::NDArrayF32Ptr> piptrack(
 
     auto dskew = .5f * avg * shift; // dskew = 0.5 * avg * shift
 
-    auto vec_dskew = dskew.toStdVector2D();
-
     auto freq_mask = ((fmin <= fft_freqs) & (fft_freqs < fmax)).reshape({-1, 1}); // freq_mask = ((fmin <= fft_freqs) & (fft_freqs < fmax)).reshape((-1, 1))
 
     auto ref_value = __threshold * nc::max(S, 0);
 
-    auto idx = nc::argwhere(nc::localmax(S * (S > ref_value), 0)); // idx = np.argwhere(freq_mask & util.localmax(S * (S > ref_value)))
+    auto idx = nc::argwhere(nc::localmax(S * (S > ref_value), 0) & freq_mask); // idx = np.argwhere(freq_mask & util.localmax(S * (S > ref_value)))
 
     auto pitches = nc::zeros_like(S);
     auto mags = nc::zeros_like(S);
 
-    //# Store pitch and magnitude
-    //pitches[idx[:, 0], idx[:, 1]] = (
-    //    (idx[:, 0] + shift[idx[:, 0], idx[:, 1]]) * float(sr) / n_fft
-    //)
-    //mags[idx[:, 0], idx[:, 1]] = S[idx[:, 0], idx[:, 1]] + dskew[idx[:, 0], idx[:, 1]]
     auto p_pitches = pitches.data();
     auto p_mags = mags.data();
     auto p_dskew = dskew.data();
     auto p_S = S.data();
     auto p_shift = shift.data();
     auto strides_s = S.strides();
+    int *ptr_coor = idx.data();
     for (int i = 0; i < idx.shape()[0]; i++) {
-        int * coor = idx.at(i, 0);
+        int * coor = ptr_coor + (i << 1); // idx.at(i, 0);
         int offset = coor[0] * strides_s[0] + coor[1];
         p_pitches[offset] = (coor[0] + p_shift[offset]) * sr / n_fft;
         p_mags[offset] = p_S[offset] + p_dskew[offset];
@@ -96,25 +92,28 @@ float pitch_tuning(
         const int& bins_per_octave
         ) {
 
-    std::vector<int> indies_larger_than_zero(0);
-    float * ptr_freq = frequencies.data();
-    for (int i = 0; i < frequencies.elemCount(); i++) {
-        if (ptr_freq[i] > 0) {
-            indies_larger_than_zero.push_back(i);
-        }
-    }
+//    std::vector<int> indies_larger_than_zero(0);
+//    float * ptr_freq = frequencies.data();
+//    for (int i = 0; i < frequencies.elemCount(); i++) {
+//        if (ptr_freq[i] > 0) {
+//            indies_larger_than_zero.push_back(i);
+//        }
+//    }
+//    auto freq = frequencies[frequencies > 0];
 
-    if (indies_larger_than_zero.size() == 0) {
-        printf("[Wraning] Trying to estimate tuning from empty frequency set.");
-        return 0.0f;
-        throw std::runtime_error("Trying to estimate tuning from empty frequency set.");
-    }
+//    if (indies_larger_than_zero.size() == 0) {
+//        printf("[Wraning] Trying to estimate tuning from empty frequency set.");
+//        return 0.0f;
+//        throw std::runtime_error("Trying to estimate tuning from empty frequency set.");
+//    }
 
-    nc::NDArrayF32Ptr newFreq = nc::NDArrayF32Ptr(new nc::NDArrayF32({int(indies_larger_than_zero.size())}));
-    float * ptr_newfreq = newFreq.data();
-    for (auto i = 0; i < indies_larger_than_zero.size(); i++) {
-        ptr_newfreq[i] = ptr_freq[indies_larger_than_zero[i]];
-    }
+//    nc::NDArrayF32Ptr newFreq = nc::NDArrayF32Ptr(new nc::NDArrayF32({int(indies_larger_than_zero.size())}));
+//    float * ptr_newfreq = newFreq.data();
+//    for (auto i = 0; i < indies_larger_than_zero.size(); i++) {
+//        ptr_newfreq[i] = ptr_freq[indies_larger_than_zero[i]];
+//    }
+
+    nc::NDArrayF32Ptr newFreq = frequencies[frequencies > 0];
 
     nc::NDArrayF32Ptr octs = hz_to_octs(newFreq);
     float * ptr_octs = octs.data();
@@ -129,8 +128,12 @@ float pitch_tuning(
         }
     }
 
-    auto bins = nc::linspace<float>(-0.5f, 0.5f, int(std::ceil(1.0 / resolution)) + 1);
+    auto bins = nc::linspace<float>(-0.5f, 0.5f, int(std::round(1.0 / resolution)) + 1);
     auto counts = nc::histogram(residual, bins);
+
+    auto vec_bins = bins.toStdVector1D();
+    auto vec_counts = counts.toStdVector1D();
+
     return bins.getitem(counts.argmax());
 }
 
@@ -151,28 +154,21 @@ float estimate_tuning(
         const char * pad_mode, //       = "reflect",
         float * ref //                  = nullptr
         ) {
-
-    std::cout << "y[0]: \n" << y.getitem(0) << std::endl;
-    std::cout << "y[1]: \n" << y.getitem(1) << std::endl;
-    std::cout << "y[2]: \n" << y.getitem(2) << std::endl;
-
     auto pitch_mag = piptrack(y, sr, S, n_fft, hop_length, fmin, fmax, threshold, win_length, window, center, pad_mode, ref); // pitch, mag = piptrack(y=y, sr=sr, S=S, n_fft=n_fft, **kwargs)
     nc::NDArrayF32Ptr pitch = pitch_mag[0];
     nc::NDArrayF32Ptr mag = pitch_mag[1];
     
-    // std::cout << "Debug -------------------" << std::endl;
-    // std::cout << "pitch > 0: " << std::endl << (pitch > 0) << std::endl;
-    // std::cout << "pitch[pitch > 0]: " << std::endl << pitch[pitch > 0] << std::endl;
-    // std::vector<std::vector<float>> data_ptich = pitch.toStdVector2D();
-
     nc::NDArrayBoolPtr pitch_mask = pitch > 0;
+
+    auto mag_tmp = mag[pitch_mask].toStdVector1D();
 
     float mag_threshold = 0.f;
     if (pitch_mask != nullptr) {
         mag_threshold = nc::median(mag[pitch_mask]);
     }
 
-    nc::NDArrayF32Ptr frequencies = pitch[(mag > mag_threshold) && pitch_mask];
+    nc::NDArrayF32Ptr frequencies = pitch[(mag >= mag_threshold) & pitch_mask];
+    auto vec_freq = frequencies.toStdVector1D();
 
     return pitch_tuning(frequencies, resolution, bins_per_octave);
 }

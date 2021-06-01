@@ -975,6 +975,20 @@ public: // dynamic methods .....
         }
     }
 
+    inline std::vector<int> flattenPos2Coor(const int& __flattenPosition) {
+        auto _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto _strides = get()->_strides;
+        auto _dims = dims();
+        std::vector<int> coor(_dims);
+        int remainder = __flattenPosition;
+        for(auto d = 0; d < _dims; d++) {
+            coor[d] = remainder / _strides[d];
+            remainder -= (coor[d] * _strides[d]);
+        }
+        return coor;
+    }
+
 //    NDArrayPtr<bool> operator && (const NDArrayPtr<bool>& __rhs) const {
 //        auto _data = get()->_data;
 //        auto _shape = get()->_shape;

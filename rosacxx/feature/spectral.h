@@ -10,6 +10,9 @@
 #include <rosacxx/core/constantq.h>
 #include <rosacxx/filters.h>
 
+#if ROSACXX_TEST
+#   include <rosacxx/util/visualize.h>
+#endif
 
 namespace rosacxx {
 namespace feature {
@@ -113,6 +116,8 @@ inline nc::NDArrayF32Ptr chroma_cqt(
             if (ptr[i] < __threshold) ptr[i] = 0.0f;
         }
     }
+
+    util::ShowNDArray2DF32(chroma, "chroma");
 
     // chroma = util.normalize(chroma, norm=norm, axis=0)
     if (__norm == INFINITY) {

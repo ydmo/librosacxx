@@ -542,6 +542,11 @@ def __cqt_response(y, n_fft, hop_length, fft_basis, mode, dtype=None):
     # And filter response energy
     return fft_basis.dot(D)
 
+def __cqt_frequencies(n_bins, fmin, bins_per_octave=12, tuning=0.0):
+    correction = 2.0 ** (float(tuning) / bins_per_octave)
+    frequencies = 2.0 ** (np.arange(0, n_bins, dtype=float) / bins_per_octave)
+    return correction * fmin * frequencies
+
 def __vqt(
     y,
     sr=22050,
@@ -587,7 +592,7 @@ def __vqt(
     fmin = fmin * 2.0 ** (tuning / bins_per_octave)
 
     # First thing, get the freqs of the top octave
-    freqs = cqt_frequencies(n_bins, fmin, bins_per_octave=bins_per_octave)[
+    freqs = __cqt_frequencies(n_bins, fmin, bins_per_octave=bins_per_octave)[
         -bins_per_octave:
     ]
 
@@ -692,6 +697,8 @@ def __vqt(
         vqt_resp.append(
             __cqt_response(my_y, n_fft, my_hop, fft_basis, pad_mode, dtype=dtype)
         )
+        # cv2.imshow("py-vqt_resp[{}]".format(i), np.abs(vqt_resp[-1]))
+        # cv2.waitKey(0)
 
     V = __trim_stack(vqt_resp, n_bins, dtype)
 
@@ -858,9 +865,15 @@ def __chroma_cqt(
     if threshold is not None:
         chroma[chroma < threshold] = 0.0
 
+    chromashow = cv2.resize(src=chroma, dsize=(0,0), fx=2., fy=2.)
+    cv2.imshow("py-chroma", chromashow)
+    cv2.waitKey(0)
+
     # Normalize
     if norm is not None:
         chroma = util.normalize(chroma, norm=norm, axis=0)
+
+
 
     return chroma
 

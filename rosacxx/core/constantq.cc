@@ -7,6 +7,10 @@
 
 #include <cmath>
 
+#if ROSACXX_TEST
+#   include <rosacxx/util/visualize.h>
+#endif
+
 namespace rosacxx {
 namespace core {
 
@@ -105,7 +109,7 @@ RetCQTFilterFFT __cqt_filter_fft(
         memcpy(fft_basis.at(r, 0), fft_basis_full.at(r, 0), (n_fft/2+1) * sizeof(std::complex<float>));
     }
 
-    fft_basis = utils::sparsify_rows(fft_basis, sparsity);
+    fft_basis = util::sparsify_rows(fft_basis, sparsity);
 
     RetCQTFilterFFT ret;
     ret.fft_basis = fft_basis;
@@ -124,6 +128,7 @@ nc::NDArrayCpxF32Ptr __cqt_response(
         const char* pad_mode = "reflect"
         ) {
     auto D = stft(y, n_fft, hop_length, -1, window, true, pad_mode);
+    auto D_ = D.toStdVector2D();
     return matmul(fft_basis, D);
 }
 
@@ -154,18 +159,18 @@ nc::NDArrayCpxF32Ptr __trim_stack(
                 auto i_to = r;
                 auto i_from = c_i.shape()[0] - end + r;
                 auto ptr_cqt_out_i = cqt_out.at(i_to, 0);
-                auto ptr_c_i = c_i.at(i_to, 0);
+                auto ptr_c_i = c_i.at(i_from, 0);
                 for (auto c = 0; c < max_col; c++) {
                     ptr_cqt_out_i[c] = ptr_c_i[c];
                 }
             }
         }
         else {
-            for (auto r = 0; r < end; r++) {
+            for (auto r = 0; r < n_oct; r++) {
                 auto i_to = r + end - n_oct;
                 auto i_from = r;
                 auto ptr_cqt_out_i = cqt_out.at(i_to, 0);
-                auto ptr_c_i = c_i.at(i_to, 0);
+                auto ptr_c_i = c_i.at(i_from, 0);
                 for (auto c = 0; c < max_col; c++) {
                     ptr_cqt_out_i[c] = ptr_c_i[c];
                 }
@@ -231,9 +236,11 @@ nc::NDArrayCpxF32Ptr vqt(
     fmin = fmin * std::pow(2.0, (tuning / bins_per_octave));
 
     auto freqs = cqt_frequencies(n_bins, fmin, bins_per_octave);
-
-    float fmin_t = freqs.min();
-    float fmax_t = freqs.max();
+    auto vec_freqs = freqs.toStdVector1D();
+    vec_freqs = std::vector<float>(vec_freqs.end()-bins_per_octave, vec_freqs.end());
+    std::sort(vec_freqs.end()-bins_per_octave, vec_freqs.end());
+    float fmin_t = vec_freqs[0];
+    float fmax_t = vec_freqs[vec_freqs.size()-1];
 
     float Q = filter_scale / alpha;
     float filter_cutoff = fmax_t * (1 + 0.5 * filters::window_bandwidth(window) / Q) + 0.5 * gamma;
@@ -255,7 +262,7 @@ nc::NDArrayCpxF32Ptr vqt(
     // Skip this block for now
     if (auto_resample && strcmp(res_type.c_str(), "kaiser_fast") != 0) {
         // Do the top octave before resampling to allow for fast resampling
-
+        throw std::runtime_error("Not implemented.");
     }
 
     int num_twos = __num_two_factors(hop_length);
@@ -267,6 +274,9 @@ nc::NDArrayCpxF32Ptr vqt(
     auto my_hop = hop_length;
 
     std::vector<nc::NDArrayCpxF32Ptr> vqt_resp(0);
+    std::vector<std::string> names = {
+        "vqt_resp[0]", "vqt_resp[1]", "vqt_resp[2]", "vqt_resp[3]", "vqt_resp[4]", "vqt_resp[5]", "vqt_resp[6]",
+    };
     for (auto i = 0; i < n_octaves; i++) {
         if (i > 0) {
             if (len(my_y) < 2)  throw std::runtime_error("Input signal length is too short for CQT/VQT.");
@@ -274,7 +284,7 @@ nc::NDArrayCpxF32Ptr vqt(
             my_sr = my_sr / 2;
             my_hop = my_hop / 2;
         }
-        auto ret = __cqt_filter_fft(my_sr, fmin * std::pow(2.0, double(-i)), n_filters, bins_per_octave, filter_scale, norm, sparsity, -1, window, gamma);
+        auto ret = __cqt_filter_fft(my_sr, fmin_t * std::pow(2.0, double(-i)), n_filters, bins_per_octave, filter_scale, norm, sparsity, -1, window, gamma);
         nc::NDArrayCpxF32Ptr fft_basis = ret.fft_basis;
         int n_fft = ret.n_fft;
         fft_basis *= std::sqrt(std::pow(2, i));
@@ -293,6 +303,9 @@ nc::NDArrayCpxF32Ptr vqt(
             }
         }
     }
+
+    // util::ShowNDArray2DF32(nc::abs(V), "V");
+    // auto vecV = V.toStdVector2D();
 
     return V;
 }

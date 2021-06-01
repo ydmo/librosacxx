@@ -285,7 +285,7 @@ inline RetConstantQ<DType> constant_q(
     int max_len = int(std::pow(2.0, (std::ceil(std::log2(max_len_f)))));
 
     for (auto i = 0; i < filters.size(); i++) {
-        filters[i] = utils::pad_center_1d(filters[i], max_len);
+        filters[i] = util::pad_center_1d(filters[i], max_len);
     }
 
     RetConstantQ<DType> ret;

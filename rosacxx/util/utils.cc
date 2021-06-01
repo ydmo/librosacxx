@@ -1,7 +1,7 @@
 #include <rosacxx/util/utils.h>
 
 namespace rosacxx {
-namespace utils {
+namespace util {
 
 } // namespace rosacxx
 } // namespace utils

@@ -667,7 +667,7 @@ TEST_F(ROSACXXTest, test_0x06_piptrack) {
                 // std::cout << "S.getitem(i) = " << S.getitem(i) << ", S_gt.getitem(i) = " << S_gt.getitem(i) << ", Abs Error = " << std::abs(S.getitem(i) - S_gt.getitem(i)) << std::endl;
             }
         }
-        EXPECT_LE(float(big_err_cnt) / S_gt.elemCount(), 1e-3);
+        EXPECT_LE(float(big_err_cnt) / S_gt.elemCount(), 5e-3);
     }
 
     auto pm = rosacxx::core::piptrack(y, sr, S, n_fft, -1, 100.f);
@@ -700,7 +700,7 @@ TEST_F(ROSACXXTest, test_0x06_piptrack) {
                 // std::cout << "mags.getitem(i) = " << mags.getitem(i) << ", mags_gt.getitem(i) = " << mags_gt.getitem(i) << ", Abs Error = " << std::abs(mags.getitem(i) - mags_gt.getitem(i)) << std::endl;
             }
         }
-        EXPECT_LE(float(big_err_cnt) / mags_gt.elemCount(), 1e-3);
+        EXPECT_LE(float(big_err_cnt) / mags_gt.elemCount(), 5e-3);
     }
 #   endif // !_WIN32
 }

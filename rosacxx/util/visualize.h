@@ -15,7 +15,7 @@ inline void ShowNDArray2DF32(const nc::NDArrayPtr<float>& S, const char * window
             imgS.at<float>(r, c) = vec2d[r][c];
         }
     }
-    if (imgS.rows < 128 || imgS.cols < 128) {
+    if (imgS.rows < 512 || imgS.cols < 512) {
         cv::resize(imgS, imgS, cv::Size(0, 0), 2.0, 2.0);
     }
     cv::imshow(windowName, imgS);

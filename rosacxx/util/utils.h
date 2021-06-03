@@ -127,8 +127,6 @@ inline nc::NDArrayPtr<std::complex<DType>> sparsify_rows(
         }
     }
 
-    auto vec_x_sparse = x_sparse.toStdVector2D();
-
     return x_sparse;
 }
 

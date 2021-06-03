@@ -34,6 +34,11 @@ import resampy
 import scipy
 import cv2
 
+def _cv2_show(name, C):
+    chromashow = cv2.resize(src=C, dsize=(0,0), fx=2., fy=2.)
+    cv2.imshow(name, chromashow)
+    cv2.waitKey(0)
+
 def _pitch_tuning(frequencies, resolution=0.01, bins_per_octave=12):
     
     frequencies = np.atleast_1d(frequencies)
@@ -196,13 +201,13 @@ def __sparsify_rows(x, quantile=0.01, dtype=None):
         x = x.reshape((1, -1))
 
     elif x.ndim > 2:
-        raise ParameterError(
+        raise RuntimeError(
             "Input must have 2 or fewer dimensions. "
             "Provided x.shape={}.".format(x.shape)
         )
 
     if not 0.0 <= quantile < 1:
-        raise ParameterError("Invalid quantile {:.2f}".format(quantile))
+        raise RuntimeError("Invalid quantile {:.2f}".format(quantile))
 
     if dtype is None:
         dtype = x.dtype
@@ -232,15 +237,15 @@ def __normalize(S, norm=np.inf, axis=0, threshold=None, fill=None):
         threshold = util.utils.tiny(S)
 
     elif threshold <= 0:
-        raise ParameterError(
+        raise RuntimeError(
             "threshold={} must be strictly " "positive".format(threshold)
         )
 
     if fill not in [None, False, True]:
-        raise ParameterError("fill={} must be None or boolean".format(fill))
+        raise RuntimeError("fill={} must be None or boolean".format(fill))
 
     if not np.all(np.isfinite(S)):
-        raise ParameterError("Input must be finite")
+        raise RuntimeError("Input must be finite")
 
     # All norms only depend on magnitude, let's do that first
     mag = np.abs(S).astype(np.float)
@@ -256,7 +261,7 @@ def __normalize(S, norm=np.inf, axis=0, threshold=None, fill=None):
 
     elif norm == 0:
         if fill is True:
-            raise ParameterError("Cannot normalize with norm=0 and fill=True")
+            raise RuntimeError("Cannot normalize with norm=0 and fill=True")
 
         length = np.sum(mag > 0, axis=axis, keepdims=True, dtype=mag.dtype)
 
@@ -272,7 +277,7 @@ def __normalize(S, norm=np.inf, axis=0, threshold=None, fill=None):
         return S
 
     else:
-        raise ParameterError("Unsupported norm: {}".format(repr(norm)))
+        raise RuntimeError("Unsupported norm: {}".format(repr(norm)))
 
     # indices where norm is below the threshold
     small_idx = length < threshold
@@ -371,7 +376,7 @@ def __resample(y, orig_sr, target_sr, res_type="kaiser_best", fix=True, scale=Fa
         y_hat = scipy.signal.resample(y, n_samples, axis=-1)
     elif res_type == "polyphase":
         if int(orig_sr) != orig_sr or int(target_sr) != target_sr:
-            raise ParameterError(
+            raise RuntimeError(
                 "polyphase resampling is only supported for integer-valued sampling rates."
             )
         # For polyphase resampling, we need up- and down-sampling ratios
@@ -388,9 +393,10 @@ def __resample(y, orig_sr, target_sr, res_type="kaiser_best", fix=True, scale=Fa
         "sinc_fastest",
         "sinc_medium",
         ):
-        import samplerate
-        # We have to transpose here to match libsamplerate
-        y_hat = samplerate.resample(y.T, ratio, converter_type=res_type).T
+        # import samplerate
+        # # We have to transpose here to match libsamplerate
+        # y_hat = samplerate.resample(y.T, ratio, converter_type=res_type).T
+        raise NotImplementedError
     else:
         y_hat = resampy.resample(y, orig_sr, target_sr, filter=res_type, axis=-1)
 
@@ -529,6 +535,8 @@ def __cqt_filter_fft(
     # sparsify the basis
     fft_basis = __sparsify_rows(fft_basis, quantile=sparsity, dtype=dtype)
 
+    # _cv2_show("fft_bias-gt", np.abs(fft_basis.A))
+
     return fft_basis, n_fft, lengths
 
 def __cqt_response(y, n_fft, hop_length, fft_basis, mode, dtype=None):
@@ -538,6 +546,8 @@ def __cqt_response(y, n_fft, hop_length, fft_basis, mode, dtype=None):
     D = stft(
         y, n_fft=n_fft, hop_length=hop_length, window="ones", pad_mode=mode, dtype=dtype
     )
+     
+    # _cv2_show("py-D-{}".format(y.shape[0]), np.abs(D))
 
     # And filter response energy
     return fft_basis.dot(D)
@@ -673,7 +683,7 @@ def __vqt(
                     "{:d}-octave CQT/VQT".format(len_orig, n_octaves)
                 )
 
-            my_y = audio.resample(my_y, 2, 1, res_type=res_type, scale=True)
+            my_y = __resample(my_y, 2, 1, res_type=res_type, scale=True)
 
             my_sr /= 2.0
             my_hop //= 2
@@ -693,6 +703,8 @@ def __vqt(
         # Re-scale the filters to compensate for downsampling
         fft_basis[:] *= np.sqrt(2 ** i)
 
+        # _cv2_show("py-fft_basis[{}]".format(i), np.abs(fft_basis.A))
+        
         # Compute the vqt filter response and append to the stack
         vqt_resp.append(
             __cqt_response(my_y, n_fft, my_hop, fft_basis, pad_mode, dtype=dtype)
@@ -771,7 +783,7 @@ def __cq_to_chroma(
         fmin = note_to_hz("C1")
 
     if np.mod(n_merge, 1) != 0:
-        raise ParameterError(
+        raise RuntimeError(
             "Incompatible CQ merge: "
             "input bins must be an "
             "integer multiple of output bins."
@@ -812,6 +824,92 @@ def __cq_to_chroma(
 
     return cq_to_ch
 
+def __tiny(x):
+    # Make sure we have an array view
+    x = np.asarray(x)
+
+    # Only floating types generate a tiny
+    if np.issubdtype(x.dtype, np.floating) or np.issubdtype(
+        x.dtype, np.complexfloating
+    ):
+        dtype = x.dtype
+    else:
+        dtype = np.float32
+
+    return np.finfo(dtype).tiny
+
+def __normalize(S, norm=np.inf, axis=0, threshold=None, fill=None):
+    # Avoid div-by-zero
+    if threshold is None:
+        threshold = __tiny(S)
+
+    elif threshold <= 0:
+        raise RuntimeError(
+            "threshold={} must be strictly " "positive".format(threshold)
+        )
+
+    if fill not in [None, False, True]:
+        raise RuntimeError("fill={} must be None or boolean".format(fill))
+
+    if not np.all(np.isfinite(S)):
+        raise RuntimeError("Input must be finite")
+
+    # All norms only depend on magnitude, let's do that first
+    mag = np.abs(S).astype(np.float)
+
+    # For max/min norms, filling with 1 works
+    fill_norm = 1
+
+    if norm == np.inf:
+        length = np.max(mag, axis=axis, keepdims=True)
+
+    elif norm == -np.inf:
+        length = np.min(mag, axis=axis, keepdims=True)
+
+    elif norm == 0:
+        if fill is True:
+            raise RuntimeError("Cannot normalize with norm=0 and fill=True")
+
+        length = np.sum(mag > 0, axis=axis, keepdims=True, dtype=mag.dtype)
+
+    elif np.issubdtype(type(norm), np.number) and norm > 0:
+        length = np.sum(mag ** norm, axis=axis, keepdims=True) ** (1.0 / norm)
+
+        if axis is None:
+            fill_norm = mag.size ** (-1.0 / norm)
+        else:
+            fill_norm = mag.shape[axis] ** (-1.0 / norm)
+
+    elif norm is None:
+        return S
+
+    else:
+        raise RuntimeError("Unsupported norm: {}".format(repr(norm)))
+
+    # indices where norm is below the threshold
+    small_idx = length < threshold
+
+    Snorm = np.empty_like(S)
+    if fill is None:
+        # Leave small indices un-normalized
+        length[small_idx] = 1.0
+        Snorm[:] = S / length
+
+    elif fill:
+        # If we have a non-zero fill value, we locate those entries by
+        # doing a nan-divide.
+        # If S was finite, then length is finite (except for small positions)
+        length[small_idx] = np.nan
+        Snorm[:] = S / length
+        Snorm[np.isnan(Snorm)] = fill_norm
+    else:
+        # Set small values to zero by doing an inf-divide.
+        # This is safe (by IEEE-754) as long as S is finite.
+        length[small_idx] = np.inf
+        Snorm[:] = S / length
+
+    return Snorm
+
 def __chroma_cqt(
     y=None,
     sr=22050,
@@ -833,7 +931,7 @@ def __chroma_cqt(
     if bins_per_octave is None:
         bins_per_octave = n_chroma
     elif np.remainder(bins_per_octave, n_chroma) != 0:
-        raise ParameterError(
+        raise RuntimeError(
             "bins_per_octave={} must be an integer "
             "multiple of n_chroma={}".format(bins_per_octave, n_chroma)
         )
@@ -852,6 +950,10 @@ def __chroma_cqt(
             )
         )
 
+    # Cshow = cv2.resize(src=C, dsize=(0,0), fx=2., fy=2.)
+    # cv2.imshow("py-C", Cshow)
+    # cv2.waitKey(0)
+
     # Map to chroma
     cq_to_chr = __cq_to_chroma(
         C.shape[0],
@@ -865,15 +967,13 @@ def __chroma_cqt(
     if threshold is not None:
         chroma[chroma < threshold] = 0.0
 
+    # Normalize
+    if norm is not None:
+        chroma = __normalize(chroma, norm=norm, axis=0)
+
     chromashow = cv2.resize(src=chroma, dsize=(0,0), fx=2., fy=2.)
     cv2.imshow("py-chroma", chromashow)
     cv2.waitKey(0)
-
-    # Normalize
-    if norm is not None:
-        chroma = util.normalize(chroma, norm=norm, axis=0)
-
-
 
     return chroma
 

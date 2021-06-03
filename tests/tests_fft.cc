@@ -1,4 +1,4 @@
-#define ENABLE_FFT_TESTS 0
+#define ENABLE_FFT_TESTS 1
 #if ENABLE_FFT_TESTS
 
 #include <iostream>

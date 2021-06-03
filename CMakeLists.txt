@@ -77,6 +77,8 @@ set_target_properties(rosacxx PROPERTIES OUTPUT_NAME "rosacxx")
 set_target_properties(rosacxx PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 
 if (BUILD_ROSACXX_TESTS)
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -D__DEBUG=1")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -D__NDEBUG=1")
     set(GTEST_SRCS
         ${CMAKE_CURRENT_LIST_DIR}/../googletest/src/gtest-all.cc
         )

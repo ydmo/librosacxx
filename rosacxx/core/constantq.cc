@@ -128,7 +128,6 @@ nc::NDArrayCpxF32Ptr __cqt_response(
         const char* pad_mode = "reflect"
         ) {
     auto D = stft(y, n_fft, hop_length, -1, window, true, pad_mode);
-    auto D_ = D.toStdVector2D();
     return matmul(fft_basis, D);
 }
 
@@ -280,7 +279,7 @@ nc::NDArrayCpxF32Ptr vqt(
     for (auto i = 0; i < n_octaves; i++) {
         if (i > 0) {
             if (len(my_y) < 2)  throw std::runtime_error("Input signal length is too short for CQT/VQT.");
-            my_y = resample(my_y, 2, 1, res_type.c_str(), scale=true);
+            my_y = resample(my_y, 2, 1, res_type.c_str(), true, scale);
             my_sr = my_sr / 2;
             my_hop = my_hop / 2;
         }
@@ -303,9 +302,6 @@ nc::NDArrayCpxF32Ptr vqt(
             }
         }
     }
-
-    // util::ShowNDArray2DF32(nc::abs(V), "V");
-    // auto vecV = V.toStdVector2D();
 
     return V;
 }

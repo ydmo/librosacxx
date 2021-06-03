@@ -131,9 +131,6 @@ float pitch_tuning(
     auto bins = nc::linspace<float>(-0.5f, 0.5f, int(std::round(1.0 / resolution)) + 1);
     auto counts = nc::histogram(residual, bins);
 
-    auto vec_bins = bins.toStdVector1D();
-    auto vec_counts = counts.toStdVector1D();
-
     return bins.getitem(counts.argmax());
 }
 
@@ -157,10 +154,7 @@ float estimate_tuning(
     auto pitch_mag = piptrack(y, sr, S, n_fft, hop_length, fmin, fmax, threshold, win_length, window, center, pad_mode, ref); // pitch, mag = piptrack(y=y, sr=sr, S=S, n_fft=n_fft, **kwargs)
     nc::NDArrayF32Ptr pitch = pitch_mag[0];
     nc::NDArrayF32Ptr mag = pitch_mag[1];
-    
     nc::NDArrayBoolPtr pitch_mask = pitch > 0;
-
-    auto mag_tmp = mag[pitch_mask].toStdVector1D();
 
     float mag_threshold = 0.f;
     if (pitch_mask != nullptr) {
@@ -168,7 +162,6 @@ float estimate_tuning(
     }
 
     nc::NDArrayF32Ptr frequencies = pitch[(mag >= mag_threshold) & pitch_mask];
-    auto vec_freq = frequencies.toStdVector1D();
 
     return pitch_tuning(frequencies, resolution, bins_per_octave);
 }

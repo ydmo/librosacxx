@@ -54,6 +54,7 @@ set(
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/filters.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/util/utils.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/util/utils.cc
+    ${CMAKE_CURRENT_LIST_DIR}/rosacxx/util/visualize.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/audio.h
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/audio.cc
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/core/constantq.h
@@ -77,12 +78,15 @@ set_target_properties(rosacxx PROPERTIES OUTPUT_NAME "rosacxx")
 set_target_properties(rosacxx PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 
 if (BUILD_ROSACXX_TESTS)
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -D__DEBUG=1")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -D__NDEBUG=1")
     set(GTEST_SRCS
         ${CMAKE_CURRENT_LIST_DIR}/../googletest/src/gtest-all.cc
         )
-    add_library(rosacxx_gtest STATIC ${GTEST_SRCS})
-    set_target_properties(rosacxx_gtest PROPERTIES OUTPUT_NAME "rosacxx_gtest")
-    set_target_properties(rosacxx_gtest PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+    add_library(googletest STATIC ${GTEST_SRCS})
+    target_include_directories(googletest INTERFACE ${CMAKE_CURRENT_LIST_DIR}/../googletest/src)
+    set_target_properties(googletest PROPERTIES OUTPUT_NAME "googletest")
+    set_target_properties(googletest PROPERTIES CLEAN_DIRECT_OUTPUT 1)
     add_executable(
         rosacxx_tests
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_data.h
@@ -91,7 +95,12 @@ if (BUILD_ROSACXX_TESTS)
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_numcxx.cc
         ${CMAKE_CURRENT_LIST_DIR}/tests/tests_rosacxx.cc
         )
-    target_link_libraries(rosacxx_tests PUBLIC rosacxx rosacxx_gtest)
+    target_link_libraries(rosacxx_tests PUBLIC googletest rosacxx pthread)
+    add_definitions(-DROSACXX_TEST=1)
+    # OpenCV Libs ...
+    find_package(OpenCV)
+    target_link_libraries(rosacxx       PUBLIC ${OpenCV_LIBS})
+    target_link_libraries(rosacxx_tests PUBLIC ${OpenCV_LIBS})
 endif()
 
 add_definitions(-DUSE_VAMP_KISS_FFT)

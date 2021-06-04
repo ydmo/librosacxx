@@ -33,7 +33,7 @@ nc::NDArrayF32Ptr resample(const nc::NDArrayF32Ptr& y, const float& origin_sr, c
         throw std::runtime_error("Not implemented.");
     }
     if (fix) {
-        y_hat = utils::fix_length(y_hat, n_samples);
+        y_hat = util::fix_length(y_hat, n_samples);
     }
     if (scale) {
         y_hat /= std::sqrt(ratio);

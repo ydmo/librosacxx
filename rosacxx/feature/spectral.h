@@ -10,6 +10,9 @@
 #include <rosacxx/core/constantq.h>
 #include <rosacxx/filters.h>
 
+#if ROSACXX_TEST
+#   include <rosacxx/util/visualize.h>
+#endif
 
 namespace rosacxx {
 namespace feature {
@@ -107,14 +110,12 @@ inline nc::NDArrayF32Ptr chroma_cqt(
     nc::NDArrayF32Ptr chroma = cq_to_chr.dot(C);
 
     if (__threshold != -FLT_MAX) {
-        // chroma[chroma < threshold] = 0.0;
         float * ptr = chroma.data();
         for (auto i = 0; i < chroma.elemCount(); i++) {
             if (ptr[i] < __threshold) ptr[i] = 0.0f;
         }
     }
 
-    // chroma = util.normalize(chroma, norm=norm, axis=0)
     if (__norm == INFINITY) {
         double threshold = FLT_MIN; // 1.1754944e-38
         auto mag = nc::abs(chroma);
@@ -138,7 +139,6 @@ inline nc::NDArrayF32Ptr chroma_cqt(
     }
     else {
         throw std::runtime_error("Not implemented.");
-
     }
 
     return chroma;

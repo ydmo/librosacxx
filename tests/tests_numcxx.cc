@@ -1,4 +1,4 @@
-#define ENABLE_NC_TESTS 0
+#define ENABLE_NC_TESTS 1
 #if ENABLE_NC_TESTS
 
 #include <iostream>

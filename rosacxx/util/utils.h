@@ -6,7 +6,7 @@
 #include <rosacxx/numcxx/numcxx.h>
 
 namespace rosacxx {
-namespace utils {
+namespace util {
 
 template <typename DType = float>
 inline nc::NDArrayPtr<DType> pad_center_1d(const nc::NDArrayPtr<DType>& __data, const int& __size) {
@@ -35,24 +35,34 @@ inline nc::NDArrayBoolPtr localmax(const nc::NDArrayPtr<DType>& __data, const in
 
 template <typename DType = float>
 inline nc::NDArrayPtr<DType> fix_length(const nc::NDArrayPtr<DType>& __data, const int& __size, const int& __axis=-1) {
+    nc::NDArrayPtr<DType> data = __data;
     int axis = __axis;
-    if (axis < 0) axis += __data.dims();
-    int n = __data.shape()[axis];
+    if (axis < 0) axis += data.dims();
+    int n = data.shape()[axis];
     if (n > __size) {
         throw std::runtime_error("Not implemented.");
+        std::vector<int> oldShape = data.shape();
+        std::vector<int> newShape = oldShape; newShape[axis] = __size;
+        nc::NDArrayPtr<DType> newData = nc::NDArrayPtr<DType>(new nc::NDArray<DType>(newShape));
+        DType *ptr_newData = newData.data();
+        for (auto k = 0; k < newData.elemCount(); k++) {
+            std::vector<int> coor = newData.flattenPos2Coor(k);
+            ptr_newData[k] = data.getitem(coor);
+        }
+        return newData;
     }
     else if (n < __size) {
         std::vector<std::pair<int, int>> lengths(0);
-        for (auto i = 0;i < __data.dims(); i++) {
+        for (auto i = 0;i < data.dims(); i++) {
             if (i == axis) {
                 lengths.push_back(std::make_pair(0, __size-n));
                 continue;
             }
             lengths.push_back(std::make_pair(0, 0));
         }
-        return nc::pad(__data, lengths);
+        return nc::pad(data, lengths);
     }
-    return nullptr;
+    return data;
 }
 
 template <typename DType = float>
@@ -116,8 +126,6 @@ inline nc::NDArrayPtr<std::complex<DType>> sparsify_rows(
             }
         }
     }
-
-    auto vec_x_sparse = x_sparse.toStdVector2D();
 
     return x_sparse;
 }

@@ -33,7 +33,7 @@ nc::NDArrayPtr<std::complex<float>> stft(
 
     // # Pad the window out to n_fft size | fft_window = util.pad_center(fft_window, n_fft)
     if (__n_fft > win_length) {
-        fft_window = utils::pad_center_1d(fft_window, __n_fft);
+        fft_window = util::pad_center_1d(fft_window, __n_fft);
     }
 
     // # Pad the time series so that frames are centered
@@ -104,7 +104,7 @@ nc::NDArrayPtr<std::complex<double>> stft(
 
     // # Pad the window out to n_fft size | fft_window = util.pad_center(fft_window, n_fft)
     if (__n_fft > win_length) {
-        fft_window = utils::pad_center_1d(fft_window, __n_fft);
+        fft_window = util::pad_center_1d(fft_window, __n_fft);
     }
 
     // # Pad the time series so that frames are centered

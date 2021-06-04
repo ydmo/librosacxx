@@ -135,11 +135,12 @@ inline NDArrayS32Ptr argmin(const NDArrayPtr<DType>& a, int axis = -1) {
 
 template<typename DType>
 inline DType median(const NDArrayPtr<DType>& __arr) {
-    DType sum = 0;
-    for (int i = 0; i < __arr.elemCount(); i++) {
-        sum += __arr.getitem(i);
+    auto vec = __arr.toStdVector1D();
+    std::sort(vec.begin(), vec.end());
+    if (vec.size() % 2 == 0) {
+        return (vec[vec.size()/2] + vec[vec.size()/2-1]) / 2;
     }
-    return sum / __arr.elemCount();
+    return vec[vec.size()/2];
 }
 
 template<typename DType>

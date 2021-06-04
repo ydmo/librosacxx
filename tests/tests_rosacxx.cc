@@ -21,7 +21,6 @@ protected:
     virtual void SetUp() override { }
 };
 
-#if 0
 
 TEST_F(ROSACXXTest, test_0x00_midi_to_hz) {
     std::vector<double> gt = {
@@ -668,7 +667,7 @@ TEST_F(ROSACXXTest, test_0x06_piptrack) {
                 // std::cout << "S.getitem(i) = " << S.getitem(i) << ", S_gt.getitem(i) = " << S_gt.getitem(i) << ", Abs Error = " << std::abs(S.getitem(i) - S_gt.getitem(i)) << std::endl;
             }
         }
-        EXPECT_LE(float(big_err_cnt) / S_gt.elemCount(), 1e-3);
+        EXPECT_LE(float(big_err_cnt) / S_gt.elemCount(), 5e-3);
     }
 
     auto pm = rosacxx::core::piptrack(y, sr, S, n_fft, -1, 100.f);
@@ -701,7 +700,7 @@ TEST_F(ROSACXXTest, test_0x06_piptrack) {
                 // std::cout << "mags.getitem(i) = " << mags.getitem(i) << ", mags_gt.getitem(i) = " << mags_gt.getitem(i) << ", Abs Error = " << std::abs(mags.getitem(i) - mags_gt.getitem(i)) << std::endl;
             }
         }
-        EXPECT_LE(float(big_err_cnt) / mags_gt.elemCount(), 1e-3);
+        EXPECT_LE(float(big_err_cnt) / mags_gt.elemCount(), 5e-3);
     }
 #   endif // !_WIN32
 }
@@ -850,8 +849,6 @@ TEST_F(ROSACXXTest, test_0x0b_cqt) { // CQT is the special case of cqt with gamm
     }
 }
 
-#endif // 0
-
 TEST_F(ROSACXXTest, test_0x0c_chroma_cqt) {
     using namespace tests::ROSACXXTest::chroma_cqt;
     nc::NDArrayF32Ptr y = nc::NDArrayF32Ptr(new nc::NDArrayF32({y_len}));
@@ -863,13 +860,12 @@ TEST_F(ROSACXXTest, test_0x0c_chroma_cqt) {
     for (auto i = 0; i < chroma_dims; i++) {
         chromaShape[i] = chroma_shape[i];
     }
-    nc::NDArrayF32Ptr chroma = nc::NDArrayF32Ptr(new nc::NDArrayF32(chromaShape));
 
     auto chroma_pred = rosacxx::feature::chroma_cqt(y, y_sr, nullptr, hop_lenght);
 
-    EXPECT_EQ(chroma.shape(), chroma_pred.shape());//, true);
-    for (auto i = 0; i < chroma.elemCount(); i++) {
-        EXPECT_NEAR(chroma.getitem(i), chroma_pred.getitem(i), 1e-4);
+    EXPECT_EQ(chromaShape, chroma_pred.shape());//, true);
+    for (auto i = 0; i < chroma_pred.elemCount(); i++) {
+        EXPECT_NEAR(chroma_dat[i], chroma_pred.getitem(i), 1e-4);
     }
 }
 

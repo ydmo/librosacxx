@@ -41,6 +41,15 @@ void _spectrogram(
         const char *                    pad_mode    = "reflect"
         );
 
+nc::NDArrayPtr<float> istft(
+    const nc::NDArrayF32Ptr& stft_matrix,
+    const int& hop_length = -1,
+    const int& win_length = -1,
+    const filters::STFTWindowType& window = filters::STFTWindowType::Hanning,
+    const bool& center = true,
+    const int& length = 0
+    );
+
 } // namespace core
 } // namespace rosacxx
 

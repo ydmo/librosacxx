@@ -196,7 +196,18 @@ void _spectrogram(
     }
 }
 
- nc::NDArrayPtr<float> istft(
+nc::NDArrayPtr<double> istft(
+    const nc::NDArrayPtr<std::complex<double>>& stft_matrix,
+    const int& hop_length, // = -1,
+    const int& win_length, // = -1,
+    const filters::STFTWindowType& window, // = filters::STFTWindowType::Hanning,
+    const bool& center, // = true,
+    const int& length // = 0
+    ) {
+    return nullptr;
+}
+
+nc::NDArrayPtr<float> istft(
     const nc::NDArrayPtr<std::complex<float>>& stft_matrix,
     const int& hop_length, // = -1,
     const int& win_length, // = -1,
@@ -204,7 +215,7 @@ void _spectrogram(
     const bool& center, // = true,
     const int& length // = 0
     ) {
-
+    return nullptr;
 }
 
 } // namespace core

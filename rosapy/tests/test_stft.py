@@ -3,6 +3,7 @@ import librosa
 from librosa.filters import get_window
 from librosa import util
 from numpy import fft
+from numpy.lib.type_check import real
 
 
 def stft(
@@ -211,9 +212,16 @@ def istft(
 
     return y
 
+# python -m rosapy.tests.test_stft
 if __name__ == '__main__':
-    import fire
-    fire.Fire()
+    outSc_real = np.fromfile('./rosapy/tests/data/outSc.real.bin', dtype=np.float32).reshape(2049, 5027)
+    outSc_imag = np.fromfile('./rosapy/tests/data/outSc.imag.bin', dtype=np.float32).reshape(2049, 5027)
+    outSc = outSc_real + outSc_imag * np.array(0+1j)
+    Yc_pred = istft(outSc, hop_length=1024, center=False)
+    Yc = np.fromfile('./rosapy/tests/data/Yc.bin', dtype=np.float32)
+    import pdb; pdb.set_trace()
+    print("end.")
+
 
 
     

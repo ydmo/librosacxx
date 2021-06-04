@@ -196,7 +196,7 @@ void _spectrogram(
     }
 }
 
- istft(
+ nc::NDArrayPtr<float> istft(
     const nc::NDArrayPtr<std::complex<float>>& stft_matrix,
     const int& hop_length, // = -1,
     const int& win_length, // = -1,

@@ -42,7 +42,7 @@ void _spectrogram(
         );
 
 nc::NDArrayPtr<float> istft(
-    const nc::NDArrayF32Ptr& stft_matrix,
+    const nc::NDArrayPtr<std::complex<float>>& stft_matrix,
     const int& hop_length = -1,
     const int& win_length = -1,
     const filters::STFTWindowType& window = filters::STFTWindowType::Hanning,

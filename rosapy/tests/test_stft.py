@@ -4,7 +4,7 @@ from librosa.filters import get_window
 from librosa import util
 from numpy import fft
 from numpy.lib.type_check import real
-
+import pdb
 
 def stft(
     y,
@@ -87,7 +87,7 @@ def __window_ss_fill(x, win_sq, n_frames, hop_length):  # pragma: no cover
         x[sample : min(n, sample + n_fft)] += win_sq[: max(0, min(n_fft, n - sample))]
 
 
-def window_sumsquare(
+def __window_sumsquare(
     window,
     n_frames,
     hop_length=512,
@@ -101,7 +101,7 @@ def window_sumsquare(
 
     n = n_fft + hop_length * (n_frames - 1)
     x = np.zeros(n, dtype=dtype)
-
+    pdb.set_trace()
     # Compute the squared window at the desired length
     win_sq = get_window(window, win_length)
     win_sq = util.normalize(win_sq, norm=norm) ** 2
@@ -112,6 +112,17 @@ def window_sumsquare(
 
     return x
 
+def __overlap_add(y, ytmp, hop_length):
+    # numba-accelerated overlap add for inverse stft
+    # y is the pre-allocated output buffer
+    # ytmp is the windowed inverse-stft frames
+    # hop_length is the hop-length of the STFT analysis
+    n_fft = ytmp.shape[0]
+    for frame in range(ytmp.shape[1]):
+        sample = frame * hop_length
+        y[sample : (sample + n_fft)] += ytmp[:, frame]
+
+
 def istft(
     stft_matrix,
     hop_length=None,
@@ -121,16 +132,6 @@ def istft(
     dtype=None,
     length=None,
     ):
-
-    def __overlap_add(y, ytmp, hop_length):
-        # numba-accelerated overlap add for inverse stft
-        # y is the pre-allocated output buffer
-        # ytmp is the windowed inverse-stft frames
-        # hop_length is the hop-length of the STFT analysis
-        n_fft = ytmp.shape[0]
-        for frame in range(ytmp.shape[1]):
-            sample = frame * hop_length
-            y[sample : (sample + n_fft)] += ytmp[:, frame]
 
     n_fft = 2 * (stft_matrix.shape[0] - 1)
 
@@ -143,9 +144,10 @@ def istft(
         hop_length = int(win_length // 4)
 
     ifft_window = get_window(window, win_length, fftbins=True)
-
+    
     # Pad out to match n_fft, and add a broadcasting axis
     ifft_window = util.pad_center(ifft_window, n_fft)[:, np.newaxis]
+    
 
     # For efficiency, trim STFT frames according to signal length if available
     if length:
@@ -164,8 +166,9 @@ def istft(
 
     y = np.zeros(expected_signal_len, dtype=dtype)
 
-    n_columns = util.MAX_MEM_BLOCK // (stft_matrix.shape[0] * stft_matrix.itemsize)
-    n_columns = max(n_columns, 1)
+    # n_columns = util.MAX_MEM_BLOCK // (stft_matrix.shape[0] * stft_matrix.itemsize)
+    # n_columns = max(n_columns, 1)
+    n_columns = 1
 
     frame = 0
     for bl_s in range(0, n_frames, n_columns):
@@ -180,7 +183,7 @@ def istft(
         frame += bl_t - bl_s
 
     # Normalize by sum of squared window
-    ifft_window_sum = window_sumsquare(
+    ifft_window_sum = __window_sumsquare(
         window,
         n_frames,
         win_length=win_length,
@@ -196,6 +199,7 @@ def istft(
         # If we don't need to control length, just do the usual center trimming
         # to eliminate padded data
         if center:
+            pdb.set_trace()
             y = y[int(n_fft // 2) : -int(n_fft // 2)]
     else:
         if center:
@@ -212,17 +216,70 @@ def istft(
 
     return y
 
+def Array_to_CXX_constexpr_str(ndarray, name):
+    dtype_map_str = {
+        "float32" : "float",
+        "float64" : "double",
+    }
+    contents = """
+    // -------- //
+    constexpr int {0}_dims = {1};
+    constexpr int {0}_shapes[{0}_dims] = {2};
+    constexpr {3} {0}_dat[{4}] = {5};
+    // -------- //
+    """.format(
+        name,
+        len(ndarray.shape),
+        str(list(ndarray.shape)).replace('[', '{').replace(']', '}'),
+        dtype_map_str[str(ndarray.dtype)],
+        ndarray.size,
+        str(ndarray.reshape(-1).tolist()).replace('[', '{').replace(']', '}'),
+        )
+    return contents
+
 # python -m rosapy.tests.test_stft
 if __name__ == '__main__':
     outSc_real = np.fromfile('./rosapy/tests/data/outSc.real.bin', dtype=np.float32).reshape(2049, 5027)
     outSc_imag = np.fromfile('./rosapy/tests/data/outSc.imag.bin', dtype=np.float32).reshape(2049, 5027)
     outSc = outSc_real + outSc_imag * np.array(0+1j)
-    Yc_pred = istft(outSc, hop_length=1024, center=False)
-    Yc = np.fromfile('./rosapy/tests/data/Yc.bin', dtype=np.float32)
-    import pdb; pdb.set_trace()
-    print("end.")
+    # Yc_pred = istft(outSc, hop_length=1024, center=False)
+    # Yc = np.fromfile('./rosapy/tests/data/Yc.bin', dtype=np.float32)
+    # print("abs avg err: ", np.abs(Yc_pred - Yc).mean())
+    # print("abs max err: ", np.abs(Yc_pred - Yc).max())
+    # print("end.")
 
+    hop_length = 1024
+    DatS = outSc[:, :100]
+    DatY = istft(DatS, hop_length=hop_length, center=False)
+    
+    contents = """
+    #ifndef tests_data_istft
+    #define tests_data_istft
+    namespace tests {{
+    namespace ROSACXXTest {{
+    namespace istft {{
+    // -------- //
+    constexpr int hop_length = {0};
+    // -------- //
 
+    {1}
+    {2}
+    {3}
+    
+    // -------- //
+    }}
+    }}  
+    }}
+    #endif // tests_data_istft
+    """.format(
+        hop_length, # 0
+        Array_to_CXX_constexpr_str(DatS.real.astype(np.float32), "DatS_Real"), #1
+        Array_to_CXX_constexpr_str(DatS.imag.astype(np.float32), "DatS_Imag"), #1
+        Array_to_CXX_constexpr_str(DatY, "DatY"), #3
+        )
+    with open("./tests/tests_data_istft.h", "w+") as fp:
+        fp.write(contents)
+    # end-with
 
     
 

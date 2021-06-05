@@ -869,4 +869,26 @@ TEST_F(ROSACXXTest, test_0x0c_chroma_cqt) {
     }
 }
 
+TEST_F(ROSACXXTest, test_0x0c_istft) {
+    using namespace tests::ROSACXXTest::istft;
+
+    nc::NDArrayF32Ptr DatY = nc::NDArrayF32Ptr(new nc::NDArrayF32({DatY_shapes[0]}));
+    for (auto i = 0; i < DatY.elemCount(); i++) {
+        *DatY.at(i) = float(DatY_dat[i]);
+    }
+
+    nc::NDArrayPtr<std::complex<float>> DatS = nc::NDArrayPtr<std::complex<float>>(new nc::NDArray<std::complex<float>>({DatS_Real_shapes[0], DatS_Real_shapes[1]}));
+    for (auto i = 0; i < DatS.elemCount(); i++) {
+        DatS.at(i)->real(float(DatS_Real_dat[i]));
+        DatS.at(i)->imag(float(DatS_Imag_dat[i]));
+    }
+
+    auto DatY_pred = rosacxx::core::istft(DatS, hop_length, -1, rosacxx::filters::STFTWindowType::Hanning, false, -1);
+
+    EXPECT_EQ(DatY_pred.shape(), DatY.shape());
+    for (auto i = 0; i < DatY.elemCount(); i++) {
+        EXPECT_NEAR(DatY_pred.getitem(i), DatY.getitem(i), 1e-4);
+    }
+}
+
 #endif

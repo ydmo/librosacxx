@@ -25,7 +25,7 @@ struct get_filter_ret {
 
 typedef double * (*GetSTFTWindow)(const int&, const bool&);
 
-double * GetSTFTWindow_BlackmanHarris(const int& Nx, const bool& __fftbins=true) {
+inline double * GetSTFTWindow_BlackmanHarris(const int& Nx, const bool& __fftbins=true) {
     double *ptr_w = (double *)calloc(Nx, sizeof (double));
     float scale2 = __fftbins? 2 * M_PI / Nx : 2 * M_PI / (Nx - 1);
     float scale4 = __fftbins? 4 * M_PI / Nx : 4 * M_PI / (Nx - 1);

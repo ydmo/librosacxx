@@ -246,7 +246,7 @@ inline RetConstantQ<DType> constant_q(
         ) {
     float fmin = __fmin;
     if (fmin == INFINITY) {
-        fmin = core::note_to_hz("C1");
+        fmin = core::note_to_hz<float>("C1");
     }
     nc::NDArrayF32Ptr lengths = constant_q_lengths(sr, fmin, n_bins, bins_per_octave, window, filter_scale, gamma);
 
@@ -327,7 +327,7 @@ inline nc::NDArrayPtr<DType> cq_to_chroma(
     double n_merge = double(bins_per_octave) / n_chroma;
 
     if (fmin == INFINITY) {
-        fmin = core::note_to_hz("C1");
+        fmin = core::note_to_hz<float>("C1");
     }
 
     if (n_merge - int(n_merge / 1) * 1 != 0) {

@@ -1,3 +1,6 @@
+#ifndef ROSACXX_FFT_KISS_FFT_H
+#define ROSACXX_FFT_KISS_FFT_H
+
 #include <stdio.h>
 #include <complex>
 
@@ -41,3 +44,5 @@ private:
 };
 
 } // namespace vkfft
+
+#endif

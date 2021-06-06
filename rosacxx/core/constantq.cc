@@ -218,7 +218,7 @@ nc::NDArrayCpxF32Ptr vqt(
 
     float fmin = __fmin;
     if (fmin == INFINITY) {
-        fmin = note_to_hz("C1");
+        fmin = note_to_hz<float>("C1");
     }
 
     float tuning = __tuning;

@@ -279,6 +279,10 @@ nc::NDArrayPtr<float> istft(
 
     ifft_window = util::pad_center_1d(ifft_window, n_fft);
 
+#   if __DEBUG
+    auto vec_ifft_window = ifft_window.toStdVector1D();
+#   endif
+
     int n_frames = -1;
     if ( length > 0 ) {
         int padded_length = 0;
@@ -308,20 +312,25 @@ nc::NDArrayPtr<float> istft(
     DType * ptr_w = ifft_window.data();
 
     for (auto i = 0; i < n_frames; i++) {
+        auto offset_mat_at_i = i * n_out;
         for (auto j = 0; j < n_out; j++) {
-            tmp_ci[j * 2 + 0] = ptr_mat[j].real();
-            tmp_ci[j * 2 + 1] = ptr_mat[j].imag();
+            tmp_ci[j * 2 + 0] = ptr_mat[offset_mat_at_i + j].real();
+            tmp_ci[j * 2 + 1] = ptr_mat[offset_mat_at_i + j].imag();
         }
         rfft.inverse(tmp_ci, tmp_ro);
-        auto offset = i * hop_length;
+        auto offset_y_at_i = i * hop_length;
         for (auto j = 0; j < n_fft; j++) {
             // overlap add ...
-            ptr_y[offset + j] += tmp_ro[j] * ptr_w[j];
+            ptr_y[offset_y_at_i + j] += tmp_ro[j] * ptr_w[j];
         }
     }
 
     free(tmp_ci);
     free(tmp_ro);
+
+#   if __DEBUG
+    auto vec_y0 = y.toStdVector1D();
+#   endif
 
     auto ifft_window_sum = __window_sumsquare<DType>(window, n_frames, hop_length, win_length, n_fft);
     DType * ptr_ifft_window_sum = ifft_window_sum.data();

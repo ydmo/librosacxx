@@ -6,7 +6,7 @@ add_compile_options(-pthread)
 
 project(rosacxx LANGUAGES CXX C)
 
-option(BUILD_ROSACXX_TESTS                      "Build librosacxx test."                                                ON)
+option(BUILD_ROSACXX_TESTS                      "Build librosacxx test."                                                OFF)
 option(BUILD_ROSACXX_FFT_WITH_SINGLE_PRECISION  "Build librosacxx fft libraries using single precision(32bit-float)."   ON)
 
 include_directories( ${CMAKE_CURRENT_LIST_DIR} )

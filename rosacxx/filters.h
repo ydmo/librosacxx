@@ -1,10 +1,10 @@
 #ifndef ROSACXX_FILTERS_H
 #define ROSACXX_FILTERS_H
 
-#include <iostream>
 #include <stdio.h>
 #include <map>
 #include <string>
+#include <cfloat>
 
 #include <rosacxx/numcxx/numcxx.h>
 #include <rosacxx/core/convert.h>
@@ -350,7 +350,6 @@ inline nc::NDArrayPtr<DType> cq_to_chroma(
             }
         }
     }
-    std::cout << cq_to_ch << std::endl;
 
     // # Roll it left to center on the target bin
     // cq_to_ch = np.roll(cq_to_ch, -int(n_merge // 2), axis=1)
@@ -411,6 +410,71 @@ inline nc::NDArrayPtr<DType> cq_to_chroma(
     }
 
     return cq_to_ch;
+}
+
+
+template <typename DType>
+nc::NDArrayPtr<DType> mel(
+        const DType& __sr,
+        const int& __n_fft,
+        const int& __n_mels=128,
+        const DType& __fmin=0.0,
+        const DType& __fmax=-DBL_MAX,
+        const bool& __htk=false,
+        const char * __norm="slaney"
+        ) {
+    DType sr = __sr;
+    DType fmax = __fmax;
+    if (fmax < 0) {
+        fmax = sr / 2;
+    }
+    int n_mels = __n_mels;
+    int n_fft = __n_fft;
+    nc::NDArrayPtr<DType> weights = nc::NDArrayPtr<DType>(new nc::NDArray<DType>({n_mels, int(1 + n_fft / 2)}));
+    nc::NDArrayPtr<DType> fftfreqs = core::fft_frequencies(sr, n_fft);
+    nc::NDArrayPtr<DType> mel_f = core::mel_frequencies(n_mels + 2, __fmin, fmax, __htk);
+
+    // fdiff = np.diff(mel_f)
+    nc::NDArrayPtr<DType> fdiff = nc::NDArrayPtr<DType>(new nc::NDArray<DType>({mel_f.elemCount()-1}));
+    DType * ptr_fdiff = fdiff.data();
+    for (auto i = 0; i < fdiff.elemCount(); i++) {
+        ptr_fdiff[i] = mel_f.getitem(i+1) - mel_f.getitem(i);
+    }
+
+    // ramps = np.subtract.outer(mel_f, fftfreqs)
+    nc::NDArrayPtr<DType> ramps = nc::NDArrayPtr<DType>(new nc::NDArray<DType>({mel_f.elemCount(), fftfreqs.elemCount()}));
+    for (auto r = 0; r < mel_f.elemCount(); r++) {
+        for (auto c = 0; c < fftfreqs.elemCount(); c++) {
+            ramps.at(r, c)[0] = mel_f.getitem(r) - fftfreqs.getitem(c);
+        }
+    }
+
+    DType * ptr_w = weights.data();
+    for (auto i = 0; i < n_mels; i++) {
+        for (auto j = 0; j < fftfreqs.elemCount(); j++) {
+            DType lower = -ramps.getitem(i, j) / fdiff.getitem(i);
+            DType upper = ramps.getitem(i+2, j) / fdiff.getitem(i+1);
+            *ptr_w++ = std::max(0, std::min(lower, upper));
+        }
+    }
+
+    if (strcmp(__norm, "slaney") == 0) {
+        std::vector<DType> enorm(n_mels);
+        for (auto i = 0; i < n_mels; i++) {
+            enorm[i] = 2.0 / (mel_f.getitem(i+2)-mel_f.getitem(i));
+        }
+        DType * ptr_w0 = weights.data();
+        for (auto i = 0; i < weights.shape(0); i++) {
+            for (auto j = 0; j < weights.shape(1); j++) {
+                *ptr_w0++ *= enorm[i];
+            }
+        }
+    }
+    else {
+        throw std::runtime_error("Not implemented.");
+    }
+
+    return weights;
 }
 
 

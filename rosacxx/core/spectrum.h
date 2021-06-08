@@ -93,8 +93,15 @@ inline nc::NDArrayPtr<std::complex<DType>> stft(
     return stft_mat.T();
 }
 
+
 template<typename DType>
-inline void _spectrogram(
+struct SpectrogramRet {
+    nc::NDArrayPtr<DType> S;
+    int n_fft;
+};
+
+template<typename DType>
+inline SpectrogramRet<DType> _spectrogram(
         const nc::NDArrayPtr<DType>&    __y,
         nc::NDArrayPtr<DType>&          __S,
         int&                            __n_fft,
@@ -133,6 +140,10 @@ inline void _spectrogram(
         }
         __S = S;
     }
+    SpectrogramRet<DType> ret;
+    ret.S = __S;
+    ret.n_fft = __n_fft;
+    return ret;
 }
 
 
@@ -312,6 +323,27 @@ inline nc::NDArrayPtr<DType> istft(
     return y;
 }
 
+
+template <typename DType>
+inline nc::NDArrayPtr<DType> melspectrogram(
+        const nc::NDArrayPtr<DType>&    __y,
+        nc::NDArrayPtr<DType>&          __S,
+        int&                            __n_fft,
+        const double                    __sr = 22050,
+        const int                       __hop_length = 512,
+        const int                       __win_length = -1,
+        const filters::STFTWindowType   __window = filters::STFTWindowType::Hanning,
+        const bool                      __center = true,
+        const char *                    __pad_mode = "reflect",
+        const double                    __power = 2.0
+        ) {
+    int n_fft = __n_fft;
+    nc::NDArrayF32Ptr S = __S;
+    auto ret = _spectrogram(__y, S, n_fft, __hop_length, __power, __win_length, __window, __center, __pad_mode);
+
+
+    return nullptr;
+}
 
 } // namespace core
 } // namespace rosacxx

@@ -80,9 +80,109 @@ nc::NDArrayPtr<DType> midi_to_hz(const nc::NDArrayS32Ptr& midi) {
 
 nc::NDArrayF32Ptr hz_to_midi(const nc::NDArrayF32Ptr& freq);
 
-nc::NDArrayF32Ptr fft_frequencies(const float& sr=22050, const int& n_fft=2048);
+// nc::NDArrayF32Ptr fft_frequencies(const float& sr=22050, const int& n_fft=2048);
 
-nc::NDArrayF32Ptr cqt_frequencies(const int& __n_bins, const float& __fmin, const int& __bins_per_octave=12, const float& __tuning=0.f);
+template <typename DType>
+inline nc::NDArrayPtr<DType> fft_frequencies(const DType& __sr, const int& __n_fft) {
+    return nc::linspace(DType(0.0), __sr * DType(0.5), (__n_fft >> 1) + 1, true);
+}
+
+// nc::NDArrayF32Ptr cqt_frequencies(const int& __n_bins, const float& __fmin, const int& __bins_per_octave=12, const float& __tuning=0.f);
+
+template <typename DType>
+inline nc::NDArrayPtr<DType> cqt_frequencies(const int& __n_bins, const DType& __fmin, const int& __bins_per_octave=12, const DType& __tuning=0) {
+    double tuning = double(__tuning);
+    double correction = std::pow(2.0, (tuning / __bins_per_octave));
+    nc::NDArrayPtr<DType> frequencies = nc::NDArrayF32Ptr(new nc::NDArrayF32({__n_bins}));
+    DType *ptr_frequencies = frequencies.data();
+    for (auto i = 0; i < __n_bins; i++) {
+        ptr_frequencies[i] = DType(double(correction) * double(__fmin) * std::pow(2.0, double(i) / __bins_per_octave));
+    }
+    return frequencies;
+}
+
+template <typename DType>
+inline DType hz_to_mel(const DType& __frequencies, const bool& htk=false) {
+    double frequencies = double(__frequencies);
+    if (htk) {
+        return DType( 2595.0 * std::log10(1.0 + frequencies / 700.0) );
+    }
+    constexpr double f_min = 0.0;
+    constexpr double f_sp = 200.0 / 3;
+    double mels = (frequencies - f_min) / f_sp;
+    double min_log_hz = 1000.0;
+    double min_log_mel = (min_log_hz - f_min) / f_sp;
+    double logstep = std::log(6.4) / 27.0;
+    if (frequencies >= min_log_hz) {
+        mels = min_log_mel + std::log(frequencies / min_log_hz) / logstep;
+    }
+    return DType(mels);
+}
+
+template <typename DType>
+inline nc::NDArrayPtr<DType> hz_to_mel(const nc::NDArrayPtr<DType>& __frequencies, const bool& htk=false) {
+    nc::NDArrayPtr<DType> melsArr = nc::NDArrayPtr<DType>(new nc::NDArray<DType>(__frequencies.shape()));
+    DType *ptr_mels = melsArr.data();
+    DType *ptr_freq = __frequencies.data();
+    if (htk) {
+        for (auto i = 0; i < melsArr.elemCount(); i++) {
+            ptr_mels[i] = DType( 2595.0 * std::log10(1.0 + double(ptr_freq[i]) / 700.0) );
+        }
+    }
+    else {
+        constexpr double f_min = 0.0;
+        constexpr double f_sp = 200.0 / 3;
+        constexpr double min_log_hz = 1000.0;
+        constexpr double logstep = 0.06875177742094912; // std::log(6.4) / 27.0;
+        for (auto i = 0; i < melsArr.elemCount(); i++) {
+            double mels = (double(ptr_freq[i]) - f_min) / f_sp;
+            double min_log_mel = (min_log_hz - f_min) / f_sp;
+            if (double(ptr_freq[i]) >= min_log_hz) {
+                mels = min_log_mel + std::log(double(ptr_freq[i]) / min_log_hz) / logstep;
+            }
+            ptr_mels[i] = DType(mels);
+        }
+    }
+    return melsArr;
+}
+
+template <typename DType>
+inline DType mel_to_hz(const DType& __mel, const bool& htk=false) {
+    constexpr double f_min = 0.0;
+    constexpr double f_sp = 200.0 / 3;
+    constexpr double min_log_hz = 1000.0;
+    constexpr double logstep = 0.06875177742094912; // np.log(6.4) / 27.0;
+    // start ..
+    double mels = double(__mel);
+    if ( htk ) {
+        return 700.0 * (std::pow(10.0, (mels / 2595.0)) - 1.0);
+    }
+    double freqs = f_min + f_sp * mels;
+    double min_log_mel = (min_log_hz - f_min) / f_sp;
+    if (mels >= min_log_mel) {
+        freqs = min_log_hz * std::exp(logstep * (mels - min_log_mel));
+    }
+    return freqs;
+}
+
+template <typename DType>
+inline nc::NDArrayPtr<DType> mel_to_hz(const nc::NDArrayPtr<DType>& __mels, const bool& htk=false) {
+    nc::NDArrayPtr<DType> hzs = nc::NDArrayPtr<DType>(new nc::NDArray<DType>(__mels.shape()));
+    DType *ptr_hz = hzs.data();
+    DType *ptr_mel = __mels.data();
+    for (auto i = 0; i < hzs.elemCount(); i++) {
+        ptr_hz[i] = mel_to_hz(ptr_mel[i], htk);
+    }
+    return hzs;
+}
+
+template <typename DType>
+nc::NDArrayPtr<DType> mel_frequencies(const int& n_mels=128, const DType& fmin=0, const DType& fmax=11025, const bool& htk=false) {
+    DType min_mel = hz_to_mel(fmin, htk);
+    DType max_mel = hz_to_mel(fmax, htk);
+    nc::NDArrayPtr<DType> mels = nc::linspace(min_mel, max_mel, n_mels);
+    return mel_to_hz(mels, htk);
+}
 
 } // namespace core
 } // namespace rosacxx

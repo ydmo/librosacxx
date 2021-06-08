@@ -69,19 +69,19 @@ nc::NDArrayF32Ptr hz_to_midi(const nc::NDArrayF32Ptr& freq) {
     return midi;
 }
 
-nc::NDArrayF32Ptr fft_frequencies(const float& __sr, const int& __n_fft) {
-    return nc::linspace(0.f, __sr * 0.5f, (__n_fft >> 1) + 1, true);
-}
+//nc::NDArrayF32Ptr fft_frequencies(const float& __sr, const int& __n_fft) {
+//    return nc::linspace(0.f, __sr * 0.5f, (__n_fft >> 1) + 1, true);
+//}
 
-nc::NDArrayF32Ptr cqt_frequencies(const int& __n_bins, const float& __fmin, const int& __bins_per_octave, const float& __tuning) {
-    float correction = std::pow(2.0, (__tuning / __bins_per_octave));
-    nc::NDArrayF32Ptr frequencies = nc::NDArrayF32Ptr(new nc::NDArrayF32({__n_bins}));
-    auto ptr_frequencies = frequencies.data();
-    for (auto i = 0; i < __n_bins; i++) {
-        ptr_frequencies[i] = float(double(correction) * double(__fmin) * std::pow(2.0, double(i) / __bins_per_octave));
-    }
-    return frequencies;
-}
+//nc::NDArrayF32Ptr cqt_frequencies(const int& __n_bins, const float& __fmin, const int& __bins_per_octave, const float& __tuning) {
+//    float correction = std::pow(2.0, (__tuning / __bins_per_octave));
+//    nc::NDArrayF32Ptr frequencies = nc::NDArrayF32Ptr(new nc::NDArrayF32({__n_bins}));
+//    auto ptr_frequencies = frequencies.data();
+//    for (auto i = 0; i < __n_bins; i++) {
+//        ptr_frequencies[i] = float(double(correction) * double(__fmin) * std::pow(2.0, double(i) / __bins_per_octave));
+//    }
+//    return frequencies;
+//}
 
 } // namespace core
 } // namespace rosacxx

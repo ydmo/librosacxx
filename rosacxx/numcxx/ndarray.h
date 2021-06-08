@@ -190,6 +190,10 @@ public: // dynamic methods .....
         return int(get()->_shape.size());
     }
 
+    int shape(int d) const {
+        return get()->_shape[d];
+    }
+
     std::vector<int> shape() const {
         return get()->_shape;
     }

@@ -1489,10 +1489,8 @@ public: // dynamic methods .....
         assert(_shape.size() == 1);
         int idx = elemCount();
         DType * ptr_data = _data;
-        std::vector<DType> ret(0);
-        for (auto r = 0; r < idx; r++) {
-            ret.push_back(*ptr_data++);
-        }
+        std::vector<DType> ret(idx);
+        memcpy(ret.data(), _data, idx * sizeof(DType));
         return ret;
     }
 
@@ -1504,13 +1502,15 @@ public: // dynamic methods .....
         int rows = _shape[0];
         int cols = _shape[1];
         DType * ptr_data = _data;
-        std::vector<std::vector<DType>> ret(0);
-        for (auto r = 0; r < rows; r++) {
-            std::vector<DType> v(cols);
-            for (auto c = 0; c < cols; c++) {
+        std::vector<std::vector<DType>> ret(rows);
+        for (int r = 0; r < rows; r++) {
+            ret[r].resize(cols);
+        }
+        for (int r = 0; r < rows; r++) {
+            std::vector<DType>& v = ret.at(r);
+            for (int c = 0; c < cols; c++) {
                 v[c] = *ptr_data++;
             }
-            ret.push_back(v);
         }
         return ret;
     }

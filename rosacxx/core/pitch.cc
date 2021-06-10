@@ -45,10 +45,15 @@ std::vector<nc::NDArrayF32Ptr> piptrack(
     nc::NDArrayF32Ptr shift = nc::NDArrayF32Ptr(new nc::NDArrayF32({shapeS[0]-2, shapeS[1]}));
     float * ptr_avg = avg.data();
     float * ptr_shift = shift.data();
-    for (auto i = 0; i < shapeS[0]-2; i++) {
-        for (auto j = 0; j < shapeS[1]; j++) {
-            *ptr_avg++ = 0.5 * (S.getitem(i+2, j) - S.getitem(i, j)); // *ptr_avg++ = (ptr_S[(i + 2) * shapeS[1] + j] - ptr_S[i * shapeS[1] + j]) * 0.5f; // avg = 0.5 * (S[2:] - S[:-2])
-            *ptr_shift++ = 2.0 * S.getitem(i+1, j) - S.getitem(i+2, j) - S.getitem(i, j); // *ptr_shift++ = 2 * ptr_S[(i + 1) * shapeS[1] + j] - ptr_S[(i + 2) * shapeS[1] + j] - ptr_S[i * shapeS[1] + j];// shift = 2 * S[1:-1] - S[2:] - S[:-2]
+    auto vecS = S.toStdVector2D();
+    for (int i = 0; i < shapeS[0]-2; i++) {
+        float * ptr_avg_i = ptr_avg + i * shapeS[1];
+        float * ptr_shift_i = ptr_shift + i * shapeS[1];
+        for (int j = 0; j < shapeS[1]; j++) {
+            // ptr_avg_i[j] = 0.5 * (S.getitem(i+2, j) - S.getitem(i, j)); // *ptr_avg++ = (ptr_S[(i + 2) * shapeS[1] + j] - ptr_S[i * shapeS[1] + j]) * 0.5f; // avg = 0.5 * (S[2:] - S[:-2])
+            // ptr_shift_i[j] = 2.0 * S.getitem(i+1, j) - S.getitem(i+2, j) - S.getitem(i, j); // *ptr_shift++ = 2 * ptr_S[(i + 1) * shapeS[1] + j] - ptr_S[(i + 2) * shapeS[1] + j] - ptr_S[i * shapeS[1] + j];// shift = 2 * S[1:-1] - S[2:] - S[:-2]
+            ptr_avg_i[j] = 0.5 * (vecS[i+2][j] - vecS[i][j]);
+            ptr_shift_i[j] = 2.0 * vecS[i+1][j] - vecS[i+2][j] - vecS[i][j];
         }
     }
 

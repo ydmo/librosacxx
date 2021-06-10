@@ -264,7 +264,7 @@ inline NDArrayS32Ptr argwhere(const NDArrayPtr<DType>& __arr) {
     for (auto i = 0; i < __arr.elemCount(); i++) {
         std::vector<int> coor = _get_coor_s32(i, iarr_strides);
         if (__arr.getitem(coor)) {
-            coors.push_back(coor);
+            coors.emplace_back(coor);
         }
     }
 

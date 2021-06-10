@@ -1,7 +1,7 @@
 #ifndef NUMCXX_H
 #define NUMCXX_H
 
-#include <rosacxx/half/half.h>
+// #include <rosacxx/half/half.h>
 // #include <rosacxx/complex/complex.h>
 
 #include <rosacxx/numcxx/ndarray.h>

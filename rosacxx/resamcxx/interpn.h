@@ -32,37 +32,71 @@ inline void resample_f(
     int n_out = y.shape()[0];
     int n_channels = y.shape()[1];
 
-    for (int t = 0; t < n_out; t++) {
-        n = int(time_register);
+    if (n_channels == 1) {
+        DType * ptr_y = y.data();
+        DType * ptr_x = x.data();
+        DType * ptr_interp_win = interp_win.data();
+        DType * ptr_interp_delta = interp_delta.data();
 
-        frac = scale * (time_register - n);
-        index_frac = frac * num_table;
-        offset = int(index_frac);
-        eta = index_frac - offset;
-        int i_max = std::min(n + 1, (nwin - offset) / index_step);
-        for (int i = 0; i < i_max; i++) {
-            int idx = offset + i * index_step;
-            float weight = interp_win.getitem(idx) + eta * interp_delta.getitem(idx);
-            for (int j = 0; j < n_channels; j++) {
-                *y.at(t, j) += weight * x.getitem(n - i, j);
+        #pragma omp parallel for
+        for (int t = 0; t < n_out; t++) {
+            time_register = t * time_increment;
+            n = int(time_register);
+            frac = scale * (time_register - n);
+            index_frac = frac * num_table;
+            offset = int(index_frac);
+            eta = index_frac - offset;
+            int i_max = std::min(n + 1, (nwin - offset) / index_step);
+            for (int i = 0; i < i_max; i++) {
+                int idx = offset + i * index_step;
+                // float weight = interp_win.getitem(idx) + eta * interp_delta.getitem(idx);
+                float weight = ptr_interp_win[idx] + eta * ptr_interp_delta[idx];
+                ptr_y[t] += weight * ptr_x[n - i];
+            }
+            frac = scale - frac;
+            index_frac = frac * num_table;
+            offset = int(index_frac);
+            eta = index_frac - offset;
+            int k_max = std::min(n_orig - n - 1, (nwin - offset)/index_step);
+            for (int k = 0; k < k_max; k++) {
+                int idx = offset + k * index_step;
+                // float weight = interp_win.getitem(idx) + eta * interp_delta.getitem(idx);
+                float weight = ptr_interp_win[idx] + eta * ptr_interp_delta[idx];
+                ptr_y[t] += weight * ptr_x[n + k + 1];
             }
         }
-
-        frac = scale - frac;
-        index_frac = frac * num_table;
-        offset = int(index_frac);
-        eta = index_frac - offset;
-        int k_max = std::min(n_orig - n - 1, (nwin - offset)/index_step);
-        for (int k = 0; k < k_max; k++) {
-            int idx = offset + k * index_step;
-            float weight = interp_win.getitem(idx) + eta * interp_delta.getitem(idx);
-            for (int j = 0; j < n_channels; j++) {
-                *y.at(t, j) += weight * x.getitem(n + k + 1, j);
-            }
-        }
-
-        time_register += time_increment;
     }
+    else {
+        for (int t = 0; t < n_out; t++) {
+            time_register = t * time_increment;
+            n = int(time_register);
+            frac = scale * (time_register - n);
+            index_frac = frac * num_table;
+            offset = int(index_frac);
+            eta = index_frac - offset;
+            int i_max = std::min(n + 1, (nwin - offset) / index_step);
+            for (int i = 0; i < i_max; i++) {
+                int idx = offset + i * index_step;
+                float weight = interp_win.getitem(idx) + eta * interp_delta.getitem(idx);
+                for (int j = 0; j < n_channels; j++) {
+                    *y.at(t, j) += weight * x.getitem(n - i, j);
+                }
+            }
+            frac = scale - frac;
+            index_frac = frac * num_table;
+            offset = int(index_frac);
+            eta = index_frac - offset;
+            int k_max = std::min(n_orig - n - 1, (nwin - offset)/index_step);
+            for (int k = 0; k < k_max; k++) {
+                int idx = offset + k * index_step;
+                float weight = interp_win.getitem(idx) + eta * interp_delta.getitem(idx);
+                for (int j = 0; j < n_channels; j++) {
+                    *y.at(t, j) += weight * x.getitem(n + k + 1, j);
+                }
+            }
+        }
+    }
+
 }
 
 } // namespace resam

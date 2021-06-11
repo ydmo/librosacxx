@@ -166,6 +166,16 @@ public: // static methods ......
         return p;
     }
 
+    static NDArrayPtr FromVecOfPair(const std::vector<std::pair<DType, DType>>& __vop) {
+        auto arr = NDArrayPtr(new NDArray<DType>({ int(__vop.size()), 2 }));
+        DType * ptr_arr = arr->_data;
+        for (size_t i = 0; i < __vop.size(); i++) {
+            *ptr_arr++ = __vop[i].first;
+            *ptr_arr++ = __vop[i].second;
+        }
+        return arr;
+    }
+
 public: // dynamic methods .....
 
     inline NDArrayPtr clone() const {

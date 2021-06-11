@@ -184,6 +184,15 @@ nc::NDArrayPtr<DType> mel_frequencies(const int& n_mels=128, const DType& fmin=0
     return mel_to_hz(mels, htk);
 }
 
+template <typename DType>
+inline nc::NDArrayPtr<DType> frames_to_samples(const nc::NDArrayPtr<DType>& frames, const int& hop_length=512, const int& n_fft=-1) {
+    int offset = 0;
+    if (n_fft > 0) {
+        offset = int(n_fft / 2);
+    }
+    return frames * hop_length + offset;
+}
+
 } // namespace core
 } // namespace rosacxx
 

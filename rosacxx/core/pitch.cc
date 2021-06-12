@@ -1,3 +1,4 @@
+#include <rosacxx/rosacxx.h>
 #include <rosacxx/core/pitch.h>
 #include <rosacxx/core/convert.h>
 #include <rosacxx/core/spectrum.h>
@@ -32,7 +33,9 @@ std::vector<nc::NDArrayF32Ptr> piptrack(
     int n_fft = __n_fft;
     nc::NDArrayF32Ptr S = __S;
 
+    LOGTIC(piptrack_spectrogram);
     _spectrogram(__y, S, n_fft, __hop_length, 1, __win_length, __window, __center, __pad_mode);
+    LOGTOC(piptrack_spectrogram);
 
     // pitch_mask
     float fmin = std::max(__fmin, 0.f);
@@ -40,12 +43,16 @@ std::vector<nc::NDArrayF32Ptr> piptrack(
 
     auto fft_freqs = fft_frequencies(sr, n_fft);
 
+    LOGTIC(piptrack_cal_avg_shift); // hot-spot 1959
+
     auto shapeS = S.shape();
     nc::NDArrayF32Ptr avg   = nc::NDArrayF32Ptr(new nc::NDArrayF32({shapeS[0]-2, shapeS[1]}));
     nc::NDArrayF32Ptr shift = nc::NDArrayF32Ptr(new nc::NDArrayF32({shapeS[0]-2, shapeS[1]}));
     float * ptr_avg = avg.data();
     float * ptr_shift = shift.data();
     auto vecS = S.toStdVector2D();
+
+#   pragma omp parallel for
     for (int i = 0; i < shapeS[0]-2; i++) {
         float * ptr_avg_i = ptr_avg + i * shapeS[1];
         float * ptr_shift_i = ptr_shift + i * shapeS[1];
@@ -62,13 +69,35 @@ std::vector<nc::NDArrayF32Ptr> piptrack(
     avg   = nc::pad(avg,   {{1, 1}, {0, 0}}); // avg   = np.pad(avg, ([1, 1], [0, 0]), mode="constant")
     shift = nc::pad(shift, {{1, 1}, {0, 0}}); // shift = np.pad(shift, ([1, 1], [0, 0]), mode="constant")
 
+    LOGTOC(piptrack_cal_avg_shift);
+
+    LOGTIC(piptrack_cal_dskew);
+
     auto dskew = .5f * avg * shift; // dskew = 0.5 * avg * shift
+
+    LOGTOC(piptrack_cal_dskew);
+
+    LOGTIC(piptrack_cal_pitches_mags_pre); // hot-spot 6590
+
+    LOGTIC(piptrack_cal_pitches_mags_pre_freq_mask);
 
     auto freq_mask = ((fmin <= fft_freqs) & (fft_freqs < fmax)).reshape({-1, 1}); // freq_mask = ((fmin <= fft_freqs) & (fft_freqs < fmax)).reshape((-1, 1))
 
+    LOGTOC(piptrack_cal_pitches_mags_pre_freq_mask);
+
+    LOGTIC(piptrack_cal_pitches_mags_pre_max_mul_thresh); // hot-spot 1728
+
     auto ref_value = __threshold * nc::max(S, 0);
 
+    LOGTOC(piptrack_cal_pitches_mags_pre_max_mul_thresh);
+
+    LOGTIC(piptrack_cal_pitches_mags_pre_argwhere); // hot-spot 4820
+
     auto idx = nc::argwhere(nc::localmax(S * (S > ref_value), 0) & freq_mask); // idx = np.argwhere(freq_mask & util.localmax(S * (S > ref_value)))
+
+    LOGTOC(piptrack_cal_pitches_mags_pre_argwhere);
+
+    LOGTOC(piptrack_cal_pitches_mags_pre);
 
     auto pitches = nc::zeros_like(S);
     auto mags = nc::zeros_like(S);
@@ -80,12 +109,18 @@ std::vector<nc::NDArrayF32Ptr> piptrack(
     auto p_shift = shift.data();
     auto strides_s = S.strides();
     int *ptr_coor = idx.data();
+
+    LOGTIC(piptrack_cal_pitches_mags_mainblock);
+
+#   pragma omp parallel for
     for (int i = 0; i < idx.shape()[0]; i++) {
         int * coor = ptr_coor + (i << 1); // idx.at(i, 0);
         int offset = coor[0] * strides_s[0] + coor[1];
         p_pitches[offset] = (coor[0] + p_shift[offset]) * sr / n_fft;
         p_mags[offset] = p_S[offset] + p_dskew[offset];
     }
+
+    LOGTOC(piptrack_cal_pitches_mags_mainblock);
 
     return { pitches, mags };
 }
@@ -135,19 +170,30 @@ float estimate_tuning(
         const char * pad_mode, //       = "reflect",
         float * ref //                  = nullptr
         ) {
+    LOGTIC(estimate_tuning_piptrack);
     auto pitch_mag = piptrack(y, sr, S, n_fft, hop_length, fmin, fmax, threshold, win_length, window, center, pad_mode, ref); // pitch, mag = piptrack(y=y, sr=sr, S=S, n_fft=n_fft, **kwargs)
+    LOGTOC(estimate_tuning_piptrack);
+
     nc::NDArrayF32Ptr pitch = pitch_mag[0];
     nc::NDArrayF32Ptr mag = pitch_mag[1];
     nc::NDArrayBoolPtr pitch_mask = pitch > 0;
 
+    LOGTIC(estimate_tuning_median);
     float mag_threshold = 0.f;
     if (pitch_mask != nullptr) {
         mag_threshold = nc::median(mag[pitch_mask]);
     }
+    LOGTOC(estimate_tuning_median);
 
+    LOGTIC(estimate_tuning_frequencies);
     nc::NDArrayF32Ptr frequencies = pitch[(mag >= mag_threshold) & pitch_mask];
+    LOGTOC(estimate_tuning_frequencies);
 
-    return pitch_tuning(frequencies, resolution, bins_per_octave);
+    LOGTIC(estimate_tuning_pitch_tuning);
+    float tuning = pitch_tuning(frequencies, resolution, bins_per_octave);
+    LOGTOC(estimate_tuning_pitch_tuning);
+
+    return tuning;
 }
 
 

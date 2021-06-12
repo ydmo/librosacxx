@@ -1,3 +1,4 @@
+#include <rosacxx/rosacxx.h>
 #include <rosacxx/core/constantq.h>
 #include <rosacxx/core/convert.h>
 #include <rosacxx/core/audio.h>
@@ -198,6 +199,7 @@ nc::NDArrayCpxF32Ptr vqt(
         const char *                    __pad_mode,
         const char *                    __res_type
         ) {
+    LOGTIC(vqt_prepare);
     nc::NDArrayF32Ptr y = __y;
     int hop_length = __hop_length;
     float sr = __sr;
@@ -220,12 +222,16 @@ nc::NDArrayCpxF32Ptr vqt(
     if (fmin == INFINITY) {
         fmin = note_to_hz<float>("C1");
     }
-
+    LOGTOC(vqt_prepare);
+    LOGTIC(vqt_estimate_tuning);
     float tuning = __tuning;
     if (tuning == INFINITY) {
         nc::NDArrayF32Ptr S = nullptr;
-        tuning = estimate_tuning(__y, __sr, S, 2048, 0.01f, __bins_per_octave);
+        tuning = estimate_tuning(__y, __sr, S, 2048, 0.01f, __bins_per_octave);// cost 65% time !!
     }
+    LOGTOC(vqt_estimate_tuning);
+
+    LOGTIC(vqt_others_243to281);
 
     float gamma = __gamma;
     if (gamma == INFINITY) {
@@ -272,25 +278,48 @@ nc::NDArrayCpxF32Ptr vqt(
     auto my_sr = sr;
     auto my_hop = hop_length;
 
+    LOGTOC(vqt_others_243to281);
+
     std::vector<nc::NDArrayCpxF32Ptr> vqt_resp(0);
     std::vector<std::string> names = {
         "vqt_resp[0]", "vqt_resp[1]", "vqt_resp[2]", "vqt_resp[3]", "vqt_resp[4]", "vqt_resp[5]", "vqt_resp[6]",
     };
+
+    TimeMetrics tm0, tm1, tm2;
+
     for (auto i = 0; i < n_octaves; i++) {
+        tm0.tic();
         if (i > 0) {
             if (len(my_y) < 2)  throw std::runtime_error("Input signal length is too short for CQT/VQT.");
-            my_y = resample(my_y, 2, 1, res_type.c_str(), true, scale);
+            my_y = resample(my_y, 2, 1, res_type.c_str(), true, scale); // hot-spot 462
             my_sr = my_sr / 2;
             my_hop = my_hop / 2;
         }
-        auto ret = __cqt_filter_fft(my_sr, fmin_t * std::pow(2.0, double(-i)), n_filters, bins_per_octave, filter_scale, norm, sparsity, -1, window, gamma);
+        tm0.toc();
+
+        tm1.tic();
+        auto ret = __cqt_filter_fft(my_sr, fmin_t * std::pow(2.0, double(-i)), n_filters, bins_per_octave, filter_scale, norm, sparsity, -1, window, gamma); // hop-spot 102
+        tm1.toc();
+
+        tm2.tic();
         nc::NDArrayCpxF32Ptr fft_basis = ret.fft_basis;
         int n_fft = ret.n_fft;
         fft_basis *= std::sqrt(std::pow(2, i));
-        vqt_resp.push_back(__cqt_response(my_y, n_fft, my_hop, fft_basis, filters::STFTWindowType::Ones, __pad_mode));
+        vqt_resp.push_back(__cqt_response(my_y, n_fft, my_hop, fft_basis, filters::STFTWindowType::Ones, __pad_mode)); // hop-spot 4537
+        tm2.toc();
     }
 
+    printf("[ROSACXX] Event[%s] cost %f ms\n", "vqt_mainblock_tm0", tm0.sum() * 1e3);
+    printf("[ROSACXX] Event[%s] cost %f ms\n", "vqt_mainblock_tm1", tm1.sum() * 1e3);
+    printf("[ROSACXX] Event[%s] cost %f ms\n", "vqt_mainblock_tm2", tm2.sum() * 1e3);
+
+    LOGTIC(vqt___trim_stack);
+
     auto V = __trim_stack(vqt_resp, n_bins);
+
+    LOGTOC(vqt___trim_stack);
+
+    LOGTIC(vqt_scale);
 
     if (scale) {
         auto lengths = filters::constant_q_lengths(sr, fmin, n_bins, bins_per_octave, window, filter_scale, gamma);
@@ -302,6 +331,8 @@ nc::NDArrayCpxF32Ptr vqt(
             }
         }
     }
+
+    LOGTOC(vqt_scale);
 
     return V;
 }

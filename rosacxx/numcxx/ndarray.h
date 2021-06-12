@@ -832,6 +832,17 @@ public: // dynamic methods .....
         return ret;
     }
 
+    NDArrayPtr<bool> operator >= (const float& rhs) const {
+        auto _data = get()->_data;
+        auto _shape = get()->_shape;
+        NDArrayPtr<bool> ret = NDArrayPtr<bool>(new NDArrayBool(_shape));
+        bool * ptr_ret = ret.data();
+        for (auto i = 0; i < ret.elemCount(); i++) {
+            if (_data[i] >= rhs) ptr_ret[i] = true;
+        }
+        return ret;
+    }
+
     NDArrayPtr operator & (const NDArrayPtr& __rhs) const {
         auto _data = get()->_data;
         auto _shape = get()->_shape;

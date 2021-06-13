@@ -1,6 +1,58 @@
 #ifndef ROSACXX_ROSACXX_H
 #define ROSACXX_ROSACXX_H
 
+#ifdef _WIN32
+#   include <immintrin.h>
+#   include <emmintrin.h>
+#	ifdef _WIN64
+#       pragma mark define something for Windows (64-bit only)
+#	endif /* _WIN64 */
+#elif __APPLE__
+#    include <Availability.h>
+#    include <AvailabilityMacros.h>
+#    include <TargetConditionals.h>
+#    include <mach/mach_time.h>
+#    include <sys/time.h>
+#    if TARGET_IPHONE_SIMULATOR
+#        define float32_t float
+#    elif TARGET_OS_IPHONE
+#       include <arm_neon.h>
+#       ifdef __LP64__
+#           pragma mark define something for ios (64-bit only)
+#       else // _LP64
+#           pragma mark define something for ios (32-bit only)
+#       endif // __LP64__
+#    elif TARGET_OS_MAC
+#       if TARGET_CPU_ARM64 // Code meant for the arm64 architecture here.
+#           include <arm_neon.h>
+#           define ASMBLOCK asm volatile
+#       elif TARGET_CPU_X86_64 // Code meant for the x86_64 architecture here.
+#           include <immintrin.h>
+#           include <emmintrin.h>
+#           if __SSE__
+#               define __X86_SSE 1
+#           endif
+#           if __AVX__
+#               define __X86_AVX 1
+#           endif
+#       endif
+#       ifdef _LP64
+#           pragma mark define something for macOS (64-bit only)
+#       else // _LP64
+#           pragma mark define something for macOS (32-bit only)
+#       endif // _LP64
+#   else // TARGET_IPHONE_SIMULATOR | TARGET_OS_IPHONE | TARGET_OS_MAC
+#       error Unsupported apple platform
+#   endif // TARGET_IPHONE_SIMULATOR | TARGET_OS_IPHONE | TARGET_OS_MAC
+#elif __ANDROID__
+#   error unsupported platform
+#elif __linux__
+#   include <immintrin.h>
+#   include <emmintrin.h>
+#else /* _WIN32 | __APPLE__ | __ANDROID__ | __linux__ */
+#	error unsupported platform
+#endif /* _WIN32 | __APPLE__ | __ANDROID__ | __linux__ */
+
 #include <cfloat>
 #include <memory>
 

@@ -120,6 +120,139 @@ RetCQTFilterFFT __cqt_filter_fft(
     return ret;
 }
 
+#if __X86_SSE
+nc::NDArrayCpxF32Ptr matmul_cpxf32_sse(const nc::NDArrayCpxF32Ptr& A, const nc::NDArrayCpxF32Ptr& B) {
+
+    // Complex A = a + bj
+    // Complex B = c + dj
+    // A * B = (a*c) + (a*d)j + (b*c)j - (b*d) = (a*c-b*d) + (a*d+b*c)j
+
+    //    float arr[4] = {0.f, 1.f, 2.f, 3.f};
+    //    __m128 row0_ = _mm_loadu_ps(arr);
+
+    //    __m128 row0 = _mm_setr_ps( 0.f,  1.f,  2.f,  3.f);
+    //    __m128 row1 = _mm_setr_ps( 4.f,  5.f,  6.f,  7.f);
+    //    __m128 row2 = _mm_setr_ps( 8.f,  9.f, 10.f, 11.f);
+    //    __m128 row3 = _mm_setr_ps(12.f, 13.f, 14.f, 15.f);
+
+    //    __m128 tmp3, tmp2, tmp1, tmp0;
+
+    //    tmp0 = _mm_unpacklo_ps(row0, row1);
+    //    tmp2 = _mm_unpacklo_ps(row2, row3);
+    //    tmp1 = _mm_unpackhi_ps(row0, row1);
+    //    tmp3 = _mm_unpackhi_ps(row2, row3);
+    //    row0 = _mm_movelh_ps(tmp0, tmp2);
+    //    row1 = _mm_movehl_ps(tmp2, tmp0);
+    //    row2 = _mm_movelh_ps(tmp1, tmp3);
+    //    row3 = _mm_movehl_ps(tmp3, tmp1);
+
+    //    for(int r = 0; r < M; ++r) {
+    //        std::complex<float> * ptr_A = A.data() + r * K;
+    //        int offsetCr = r * N;
+    //        std::complex<float> * ptr_B = B.data();
+    //        for(int k = 0; k < K; ++k){
+    //            std::complex<float> * ptr_C = C.data() + offsetCr;
+    //            for(int n = 0; n < N; ++n){
+    //                *ptr_C++ += *ptr_A * *ptr_B++;
+    //            }
+    //            ptr_A += 1;
+    //        }
+    //    }
+
+    assert(A.shape(1) == B.shape(0));
+
+    const int M = A.shape(0);
+    const int K = A.shape(1);
+    const int N = B.shape(1);
+
+    nc::NDArrayCpxF32Ptr C = nc::NDArrayCpxF32Ptr(new nc::NDArray<std::complex<float>>({M, N}));
+
+    int Kdiv4 = 0; // K / 4;
+    int Kmod4 = K; // K % 4;
+
+    int Ndiv4 = N / 4;
+    int Nmod4 = N % 4;
+
+#   pragma omp parallel for
+    for (int r = 0; r < M; r++) {
+
+        std::complex<float> * ptr_A = A.data() + r * K;
+        int offsetCr = r * N;
+        std::complex<float> * ptr_B = B.data();
+
+        __m128 v4f_res = _mm_set1_ps(0.f);
+
+        for (int k = 0; k < Kdiv4; k++) {
+
+            for (int n = 0; n < Ndiv4; n++) {
+
+            }
+
+            for (int n = 0; n < Nmod4; n++) {
+
+            }
+
+        }
+
+        for (int k = 0; k < Kmod4; k++) {
+
+            std::complex<float> * ptr_C = C.data() + offsetCr;
+
+            float realA = ptr_A->real();
+            float imagA = ptr_A->imag();
+
+            // __m128 v4f_realA = _mm_set1_ps(realA);
+            // __m128 v4f_imagA = _mm_set1_ps(imagA);
+
+            const __m128 v4f_a = _mm_set1_ps(realA);
+            const __m128 v4f_b = _mm_set1_ps(imagA);
+
+            for (int n = 0; n < Ndiv4; n++) {
+                __m128 v4f_Br0i0r1i1 = _mm_loadu_ps( (float *)ptr_B     );
+                __m128 v4f_Br2i2r3i3 = _mm_loadu_ps(((float *)ptr_B) + 4);
+
+                __m128 v4f_Cr0i0r1i1 = _mm_loadu_ps( (float *)ptr_C     );
+                __m128 v4f_Cr2i2r3i3 = _mm_loadu_ps(((float *)ptr_C) + 4);
+
+                // __m128 v4f_realB = _mm_shuffle_ps(v4f_Br0i0r1i1, v4f_Br2i2r3i3, 0b10001000);
+                // __m128 v4f_imagB = _mm_shuffle_ps(v4f_Br0i0r1i1, v4f_Br2i2r3i3, 0b11011101);
+
+                __m128 v4f_c = _mm_shuffle_ps(v4f_Br0i0r1i1, v4f_Br2i2r3i3, 0b10001000);
+                __m128 v4f_d = _mm_shuffle_ps(v4f_Br0i0r1i1, v4f_Br2i2r3i3, 0b11011101);
+
+                __m128 v4f_realC = _mm_sub_ps(_mm_mul_ps(v4f_a, v4f_c), _mm_mul_ps(v4f_b, v4f_d));
+                __m128 v4f_imagC = _mm_add_ps(_mm_mul_ps(v4f_a, v4f_d), _mm_mul_ps(v4f_b, v4f_c));
+
+                // Complex A = a + bj
+                // Complex B = c + dj
+                // A * B = (a*c) + (a*d)j + (b*c)j - (b*d) = (a*c-b*d) + (a*d+b*c)j
+
+                __m128 v4f_Cr0i0r1i1_ = _mm_unpacklo_ps(v4f_realC, v4f_imagC);
+                __m128 v4f_Cr2i2r3i3_ = _mm_unpackhi_ps(v4f_realC, v4f_imagC);
+
+                v4f_Cr0i0r1i1 = _mm_add_ps(v4f_Cr0i0r1i1, v4f_Cr0i0r1i1_);
+                v4f_Cr2i2r3i3 = _mm_add_ps(v4f_Cr2i2r3i3, v4f_Cr2i2r3i3_);
+
+                _mm_storeu_ps( (float *)ptr_C     , v4f_Cr0i0r1i1);
+                _mm_storeu_ps(((float *)ptr_C) + 4, v4f_Cr2i2r3i3);
+
+                ptr_C += 4;
+                ptr_B += 4;
+            }
+
+            for (int n = 0; n < Nmod4; n++) {
+                *ptr_C++ += *ptr_A * *ptr_B++;
+            }
+
+            ptr_A += 1;
+        }
+
+    }
+
+    return C;
+}
+#endif // __X86_SSE
+
 nc::NDArrayCpxF32Ptr __cqt_response(
         const nc::NDArrayF32Ptr& y,
         const int& n_fft,
@@ -129,6 +262,10 @@ nc::NDArrayCpxF32Ptr __cqt_response(
         const char* pad_mode = "reflect"
         ) {
     auto D = stft(y, n_fft, hop_length, -1, window, true, pad_mode);
+#   if __X86_SSE
+    auto res = matmul_cpxf32_sse(fft_basis, D);
+    return res;
+#   endif
     return matmul(fft_basis, D);
 }
 
@@ -375,3 +512,27 @@ nc::NDArrayCpxF32Ptr cqt(
 
 } // namespace core
 } // namespace rosacxx
+
+
+void test_matmul_cpxf32_sse() {
+    const int M = 9;
+    const int K = 13;
+    const int N = 18;
+    nc::NDArrayCpxF32Ptr A = nc::NDArrayCpxF32Ptr(new nc::NDArray<std::complex<float>>({M, K}));
+    nc::NDArrayCpxF32Ptr B = nc::NDArrayCpxF32Ptr(new nc::NDArray<std::complex<float>>({K, N}));
+    for (auto k = 0; k < 1000; k++) {
+        for (auto i = 0; i < A.elemCount(); i++) {
+            *A.at(i) = std::complex<float>((k+1)*i*2, (k+1)*i*2+1);
+        }
+        for (auto i = 0; i < B.elemCount(); i++) {
+            *B.at(i) = std::complex<float>((k+1)*i*2, (k+1)*i*2+1);
+        }
+        nc::NDArrayCpxF32Ptr C_pred = rosacxx::core::matmul_cpxf32_sse(A, B);
+        nc::NDArrayCpxF32Ptr C_gt = matmul(A, B);
+        assert(C_pred.elemCount() == C_gt.elemCount());
+        for (auto i = 0; i < C_gt.elemCount(); i++) {
+            assert(1e-9 > double(std::abs(C_pred.getitem(i)-C_gt.getitem(i))));
+        }
+    }
+    printf("[TEST] test_matmul_cpxf32_sse ok.\n");
+}

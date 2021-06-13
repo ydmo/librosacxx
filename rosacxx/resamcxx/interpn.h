@@ -38,7 +38,6 @@ inline void resample_f(
         DType * ptr_interp_win = interp_win.data();
         DType * ptr_interp_delta = interp_delta.data();
 
-        #pragma omp parallel for
         for (int t = 0; t < n_out; t++) {
             time_register = t * time_increment;
             n = int(time_register);

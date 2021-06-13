@@ -61,8 +61,13 @@ namespace rosacxx {
 double getTickFrequency(void);
 double getTickCount(void);
 
-#define LOGTIC(event) double tic_##event = rosacxx::getTickCount();
-#define LOGTOC(event) printf("[ROSACXX] Event[%s] cost %f ms\n", #event, ( rosacxx::getTickCount() - tic_##event ) / rosacxx::getTickFrequency() * 1e3) ;
+#if 0
+#   define LOGTIC(event) double tic_##event = rosacxx::getTickCount()
+#   define LOGTOC(event) printf("[ROSACXX] Event[%s] cost %f ms\n", #event, ( rosacxx::getTickCount() - tic_##event ) / rosacxx::getTickFrequency() * 1e3)
+#else
+#   define LOGTIC(event)
+#   define LOGTOC(event)
+#endif
 
 class TimeMetrics {
 public:

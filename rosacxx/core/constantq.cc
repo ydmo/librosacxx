@@ -189,7 +189,9 @@ nc::NDArrayCpxF32Ptr matmul_cpxf32_sse(const nc::NDArrayCpxF32Ptr& A, const nc::
             }
 
             for (int n = 0; n < Nmod4; n++) {
-
+                // Complex A = a + bj
+                // Complex B = c + dj
+                // A * B = (a*c) + (a*d)j + (b*c)j - (b*d) = (a*c-b*d) + (a*d+b*c)j
             }
 
         }
@@ -201,11 +203,8 @@ nc::NDArrayCpxF32Ptr matmul_cpxf32_sse(const nc::NDArrayCpxF32Ptr& A, const nc::
             float realA = ptr_A->real();
             float imagA = ptr_A->imag();
 
-            // __m128 v4f_realA = _mm_set1_ps(realA);
-            // __m128 v4f_imagA = _mm_set1_ps(imagA);
-
-            const __m128 v4f_a = _mm_set1_ps(realA);
-            const __m128 v4f_b = _mm_set1_ps(imagA);
+            const __m128 v4f_realA = _mm_set1_ps(realA);
+            const __m128 v4f_imagA = _mm_set1_ps(imagA);
 
             for (int n = 0; n < Ndiv4; n++) {
                 __m128 v4f_Br0i0r1i1 = _mm_loadu_ps( (float *)ptr_B     );
@@ -214,18 +213,18 @@ nc::NDArrayCpxF32Ptr matmul_cpxf32_sse(const nc::NDArrayCpxF32Ptr& A, const nc::
                 __m128 v4f_Cr0i0r1i1 = _mm_loadu_ps( (float *)ptr_C     );
                 __m128 v4f_Cr2i2r3i3 = _mm_loadu_ps(((float *)ptr_C) + 4);
 
-                // __m128 v4f_realB = _mm_shuffle_ps(v4f_Br0i0r1i1, v4f_Br2i2r3i3, 0b10001000);
-                // __m128 v4f_imagB = _mm_shuffle_ps(v4f_Br0i0r1i1, v4f_Br2i2r3i3, 0b11011101);
+                __m128 v4f_realB = _mm_shuffle_ps(v4f_Br0i0r1i1, v4f_Br2i2r3i3, 0x88); // 0b-10-00-10-00 // 2-0-2-0
+                __m128 v4f_imagB = _mm_shuffle_ps(v4f_Br0i0r1i1, v4f_Br2i2r3i3, 0xdd); // 0b-11-01-11-01 // 3-1-3-1
 
-                __m128 v4f_c = _mm_shuffle_ps(v4f_Br0i0r1i1, v4f_Br2i2r3i3, 0b10001000);
-                __m128 v4f_d = _mm_shuffle_ps(v4f_Br0i0r1i1, v4f_Br2i2r3i3, 0b11011101);
+                // __m128 tmp00 = _mm_mul_ps(v4f_realA, v4f_realB);
+                // __m128 tmp01 = _mm_mul_ps(v4f_imagA, v4f_imagB);
+                // __m128 tmp10 = _mm_mul_ps(v4f_realA, v4f_imagB);
+                // __m128 tmp11 = _mm_mul_ps(v4f_imagA, v4f_realB);
+                // __m128 v4f_realC = _mm_sub_ps(tmp00, tmp01);
+                // __m128 v4f_imagC = _mm_add_ps(tmp10, tmp11);
 
-                __m128 v4f_realC = _mm_sub_ps(_mm_mul_ps(v4f_a, v4f_c), _mm_mul_ps(v4f_b, v4f_d));
-                __m128 v4f_imagC = _mm_add_ps(_mm_mul_ps(v4f_a, v4f_d), _mm_mul_ps(v4f_b, v4f_c));
-
-                // Complex A = a + bj
-                // Complex B = c + dj
-                // A * B = (a*c) + (a*d)j + (b*c)j - (b*d) = (a*c-b*d) + (a*d+b*c)j
+                __m128 v4f_realC = _mm_sub_ps(_mm_mul_ps(v4f_realA, v4f_realB), _mm_mul_ps(v4f_imagA, v4f_imagB));
+                __m128 v4f_imagC = _mm_add_ps(_mm_mul_ps(v4f_realA, v4f_imagB), _mm_mul_ps(v4f_imagA, v4f_realB));
 
                 __m128 v4f_Cr0i0r1i1_ = _mm_unpacklo_ps(v4f_realC, v4f_imagC);
                 __m128 v4f_Cr2i2r3i3_ = _mm_unpackhi_ps(v4f_realC, v4f_imagC);
@@ -365,6 +364,7 @@ nc::NDArrayCpxF32Ptr vqt(
     if (tuning == INFINITY) {
         nc::NDArrayF32Ptr S = nullptr;
         tuning = estimate_tuning(__y, __sr, S, 2048, 0.01f, __bins_per_octave);// cost 65% time !!
+        // printf("tuning = %f\n", double(tuning));
     }
     LOGTOC(vqt_estimate_tuning);
 
@@ -446,9 +446,9 @@ nc::NDArrayCpxF32Ptr vqt(
         tm2.toc();
     }
 
-    printf("[ROSACXX] Event[%s] cost %f ms\n", "vqt_mainblock_tm0", tm0.sum() * 1e3);
-    printf("[ROSACXX] Event[%s] cost %f ms\n", "vqt_mainblock_tm1", tm1.sum() * 1e3);
-    printf("[ROSACXX] Event[%s] cost %f ms\n", "vqt_mainblock_tm2", tm2.sum() * 1e3);
+//    printf("[ROSACXX] Event[%s] cost %f ms\n", "vqt_mainblock_tm0", tm0.sum() * 1e3);
+//    printf("[ROSACXX] Event[%s] cost %f ms\n", "vqt_mainblock_tm1", tm1.sum() * 1e3);
+//    printf("[ROSACXX] Event[%s] cost %f ms\n", "vqt_mainblock_tm2", tm2.sum() * 1e3);
 
     LOGTIC(vqt___trim_stack);
 

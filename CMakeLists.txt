@@ -72,7 +72,29 @@ set(
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/feature/spectral.cc
 
     )
-add_library(rosacxx STATIC ${ROSACXX_SRCS})
+
+function(assign_source_group)
+    foreach(_source IN ITEMS ${ARGN})
+        if (IS_ABSOLUTE "${_source}")
+            file(RELATIVE_PATH _source_rel "${CMAKE_CURRENT_SOURCE_DIR}" "${_source}")
+        else()
+            set(_source_rel "${_source}")
+        endif()
+        get_filename_component(_source_path "${_source_rel}" PATH)
+        string(REPLACE "/" "\\" _source_path_msvc "${_source_path}")
+        source_group("${_source_path_msvc}" FILES "${_source}")
+    endforeach()
+endfunction(assign_source_group)
+ 
+function(my_add_library)
+    foreach(_source IN ITEMS ${ARGN})
+        assign_source_group(${_source})
+    endforeach()
+    add_library(${ARGV})
+endfunction(my_add_library)
+
+my_add_library(rosacxx STATIC ${ROSACXX_SRCS})
+
 target_include_directories(rosacxx INTERFACE ${CMAKE_CURRENT_LIST_DIR}/rosacxx)
 set_target_properties(rosacxx PROPERTIES OUTPUT_NAME "rosacxx")
 set_target_properties(rosacxx PROPERTIES CLEAN_DIRECT_OUTPUT 1)

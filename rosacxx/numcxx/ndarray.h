@@ -118,6 +118,17 @@ public:
 
 public: // static methods ......
 
+    static NDArrayPtr FromBinaryFile(const char * i_file) {
+        FILE *fs = fopen(i_file, "rb");
+        fseek(fs,0L,SEEK_END);
+        int size=ftell(fs);
+        nc::NDArrayPtr<DType> y = nc::NDArrayPtr<DType>(new nc::NDArray<DType>({int(size/sizeof(DType))}));
+        fseek(fs, 0L, SEEK_SET);
+        fread(y.data(), sizeof(float), y.elemCount(), fs);
+        fclose(fs);
+        return y;
+    }
+
     static NDArrayPtr FromScalar(const DType& __scalar) {
         return NDArrayPtr(new NDArray<DType>({1}, __scalar));
     }
@@ -821,6 +832,17 @@ public: // dynamic methods .....
         return ret;
     }
 
+    NDArrayPtr<bool> operator >= (const float& rhs) const {
+        auto _data = get()->_data;
+        auto _shape = get()->_shape;
+        NDArrayPtr<bool> ret = NDArrayPtr<bool>(new NDArrayBool(_shape));
+        bool * ptr_ret = ret.data();
+        for (auto i = 0; i < ret.elemCount(); i++) {
+            if (_data[i] >= rhs) ptr_ret[i] = true;
+        }
+        return ret;
+    }
+
     NDArrayPtr operator & (const NDArrayPtr& __rhs) const {
         auto _data = get()->_data;
         auto _shape = get()->_shape;
@@ -1275,7 +1297,7 @@ public: // dynamic methods .....
         auto ptr_ret = ret.data();
         for (auto i = 0; i < _shape[0]; i++) {
             for (auto j = 0; j < _shape[1]; j++) {
-                ptr_ret[j * _shape[0] + i] = _data[i * _shape[1] + j];
+                ptr_ret[j * _shape[0] + i] = *_data++; // _data[i * _shape[1] + j];
             }
         }
         return ret;

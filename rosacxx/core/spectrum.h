@@ -64,13 +64,17 @@ inline nc::NDArrayPtr<std::complex<DType>> stft(
 
     vkfft::FFTReal rfft((unsigned int)__n_fft);
 
-    std::complex<DType> * ptr_stft_mat = stft_mat.data();
-    DType * ptr_frame = y.data();
+    // std::complex<DType> * ptr_stft_mat = stft_mat.data();
+    // DType * ptr_frame = y.data();
 
     kiss_fft_scalar_t * tmp_ri = (kiss_fft_scalar_t *)nc::alignedMalloc(size_t(32), size_t(__n_fft      ) * sizeof(kiss_fft_scalar_t));
     kiss_fft_scalar_t * tmp_co = (kiss_fft_scalar_t *)nc::alignedMalloc(size_t(32), size_t(numFFTOut * 2) * sizeof(kiss_fft_scalar_t));
 
+#   pragma omp parallel for
     for (auto i = 0; i < numFrames; i++) {
+
+        std::complex<DType> * ptr_stft_mat = stft_mat.data() + i * numFFTOut;
+        DType * ptr_frame = y.data() + i * hop_length;
 
         for (auto j = 0; j < __n_fft; j++) {
             tmp_ri[j] = ptr_frame[j]  * fft_window.getitem(j);
@@ -79,12 +83,13 @@ inline nc::NDArrayPtr<std::complex<DType>> stft(
         rfft.forward(tmp_ri, tmp_co);
 
         for (auto j = 0; j < numFFTOut; j++) {
-            ptr_stft_mat[j].real(tmp_co[j * 2 + 0]);
-            ptr_stft_mat[j].imag(tmp_co[j * 2 + 1]);
+            auto j2 = (j << 1);
+            ptr_stft_mat[j].real(tmp_co[j2 + 0]);
+            ptr_stft_mat[j].imag(tmp_co[j2 + 1]);
         }
 
-        ptr_stft_mat += numFFTOut;
-        ptr_frame += hop_length;
+        // ptr_stft_mat += numFFTOut;
+        // ptr_frame += hop_length;
     }
 
     nc::alignedFree(tmp_ri);

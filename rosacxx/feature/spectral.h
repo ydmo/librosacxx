@@ -6,6 +6,7 @@
 #include <cfloat>
 #include <cmath>
 
+#include <rosacxx/rosacxx.h>
 #include <rosacxx/numcxx/numcxx.h>
 #include <rosacxx/core/constantq.h>
 #include <rosacxx/filters.h>
@@ -50,8 +51,9 @@ inline nc::NDArrayF32Ptr chroma_cqt(
         const int&                  __bins_per_octave =   36,
         const char *                __cqt_mode =          "full"
         ) {
-    // --------
+    LOGTIC(chroma_cqt_prepare);
 
+    // --------
     nc::NDArrayF32Ptr y = __y;
     float sr = __sr;
     int hop_length = __hop_length;
@@ -61,14 +63,12 @@ inline nc::NDArrayF32Ptr chroma_cqt(
     int bins_per_octave = __bins_per_octave;
     float tuning = __tuning;
     nc::NDArrayF32Ptr C = __C;
-
     // --------
 
     if (y == nullptr) {
         throw std::invalid_argument("i_y is nullptr.");
         return nullptr;
     }
-
 
     if (bins_per_octave <= 0) {
         bins_per_octave = n_chroma;
@@ -77,19 +77,25 @@ inline nc::NDArrayF32Ptr chroma_cqt(
         throw std::invalid_argument("bins_per_octave must be an integer multiple of n_chroma.");
     }
 
+    LOGTOC(chroma_cqt_prepare);
+
     // Build the CQT if we don't have one already
     if (!C) {
         if (strcmp("full", __cqt_mode) == 0) {
-            C = nc::abs(core::cqt(
-                            y,
-                            sr,
-                            hop_length,
-                            fmin,
-                            n_octaves * bins_per_octave,
-                            bins_per_octave,
-                            tuning
-                            )
+            LOGTIC(chroma_cqt_abs_cqt);
+            auto Ctmp = core::cqt(
+                        y,
+                        sr,
+                        hop_length,
+                        fmin,
+                        n_octaves * bins_per_octave,
+                        bins_per_octave,
+                        tuning
                         );
+            LOGTOC(chroma_cqt_abs_cqt);
+            LOGTIC(chroma_cqt_abs_Ctmp);
+            C = nc::abs(Ctmp); // can be optimized !!
+            LOGTOC(chroma_cqt_abs_Ctmp);
         }
         else if (strcmp("hybrid", __cqt_mode) == 0) {
             C = nullptr;
@@ -99,6 +105,7 @@ inline nc::NDArrayF32Ptr chroma_cqt(
         }
     }
 
+    LOGTIC(cq_to_chroma);
     nc::NDArrayF32Ptr cq_to_chr = filters::cq_to_chroma<float>(
         C.shape()[0],
         __bins_per_octave,
@@ -106,16 +113,22 @@ inline nc::NDArrayF32Ptr chroma_cqt(
         __fmin,
         __window
         );
+    LOGTOC(cq_to_chroma);
 
-    nc::NDArrayF32Ptr chroma = cq_to_chr.dot(C);
+    LOGTIC(cq_to_chr_dot_C);
+    nc::NDArrayF32Ptr chroma = cq_to_chr.dot(C); // can be optimized !
+    LOGTOC(cq_to_chr_dot_C);
 
+    LOGTIC(threshold_chroma);
     if (__threshold != -FLT_MAX) {
         float * ptr = chroma.data();
         for (auto i = 0; i < chroma.elemCount(); i++) {
             if (ptr[i] < __threshold) ptr[i] = 0.0f;
         }
     }
+    LOGTOC(threshold_chroma);
 
+    LOGTIC(chroma_cqt_norm);
     if (__norm == INFINITY) {
         double threshold = FLT_MIN; // 1.1754944e-38
         auto mag = nc::abs(chroma);
@@ -140,6 +153,7 @@ inline nc::NDArrayF32Ptr chroma_cqt(
     else {
         throw std::runtime_error("Not implemented.");
     }
+    LOGTOC(chroma_cqt_norm);
 
     return chroma;
 }

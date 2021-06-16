@@ -280,25 +280,38 @@ template<typename DType = float>
 NDArrayPtr<DType> matmul(const NDArrayPtr<DType>& A, const NDArrayPtr<DType>& B) {
     assert(A.dims() == 2);
     assert(B.dims() == 2);
-    assert(A.shape()[1] == B.shape()[0]);
-    int M = A.shape()[0];
-    int K = A.shape()[1];
-    int N = B.shape()[1];
-
+    assert(A.shape(1) == B.shape(0));
+    int M = A.shape(0);
+    int K = A.shape(1);
+    int N = B.shape(1);
     NDArrayPtr<DType> C = NDArrayPtr<DType>(new NDArray<DType>({M, N}));
-    auto ptr_C = C.data();
-    auto ptr_A = A.data();
-    auto ptr_B = B.data();
 
     #pragma omp parallel for
-    for(int i = 0; i < M; ++i) {
+    for(int r = 0; r < M; ++r) {
+        std::complex<float> * ptr_A = A.data() + r * K;
+        int offsetCr = r * N;
+        std::complex<float> * ptr_B = B.data();
         for(int k = 0; k < K; ++k){
-            DType A_PART = ptr_A[i*K+k];
-            for(int j = 0; j < N; ++j){
-                ptr_C[i*N+j] += A_PART * ptr_B[k*N+j];
+            std::complex<float> * ptr_C = C.data() + offsetCr;
+            for(int n = 0; n < N; ++n){
+                *ptr_C++ += *ptr_A * *ptr_B++;
             }
+            ptr_A += 1;
         }
     }
+
+//    auto ptr_C = C.data();
+//    auto ptr_A = A.data();
+//    auto ptr_B = B.data();
+//#   pragma omp parallel for
+//    for(int i = 0; i < M; ++i) {
+//        for(int k = 0; k < K; ++k){
+//            DType A_PART = ptr_A[i*K+k];
+//            for(int j = 0; j < N; ++j){
+//                ptr_C[i*N+j] += A_PART * ptr_B[k*N+j];
+//            }
+//        }
+//    }
 
     return C;
 }

@@ -488,6 +488,25 @@ public: // dynamic methods .....
         }
     }
 
+    NDArrayPtr<DType> operator - (const NDArrayPtr<DType>& rhs) const {
+        DType * _data = get()->_data;
+        auto _shape = get()->_shape;
+        auto _strides = get()->_strides;
+        if (_shape == rhs.shape()) { // is elementwise operation
+            auto ret = NDArrayPtr<DType>(new NDArray<DType>(_shape));
+            DType * ptr_ret = ret.data();
+            DType * ptr_rhs = rhs.data();
+            for (auto i = 0; i < elemCount(); i++) {
+                ptr_ret[i] = _data[i] - ptr_rhs[i];
+            }
+            return ret;
+        }
+        else {
+            throw std::runtime_error("Not implemented.");
+            return nullptr;
+        }
+    }
+
     template<typename RType>
     NDArrayPtr<DType> operator * (const NDArrayPtr<RType>& rhs) const {
         DType * _data = get()->_data;
@@ -1040,6 +1059,15 @@ public: // dynamic methods .....
         return sum;
     }
 
+    double mean() const {
+        auto _data = get()->_data;
+        double sum = 0;
+        for (int i = 0; i < elemCount(); i++) {
+            sum += _data[i];
+        }
+        return sum / elemCount();
+    }
+
     DType min() const {
         auto _data = get()->_data;
         DType min_val = _data[0];
@@ -1329,7 +1357,10 @@ public: // dynamic methods .....
             new_shape[neg_dim] = elemCnt / k;
         }
         // ------------------------------------------------------------------
-        return NDArrayPtr<DType>(new NDArray<DType>(new_shape, _data));;
+        auto ret = NDArrayPtr<DType>(new NDArray<DType>(new_shape));
+        assert(ret.elemCount() == elemCount());
+        memcpy(ret.data(), _data, bytesCount());
+        return ret;
     }
 
     template<typename RType>
@@ -1376,6 +1407,32 @@ public: // dynamic methods .....
             }
         }
         return ret;
+    }
+    std::vector<std::vector<std::vector<DType>>> toStdVector3D() const {
+        auto _data = get()->_data;
+        auto _shape = get()->_shape;
+        // --------
+        assert(_shape.size() == 3);
+        // --------
+        int C = _shape[0];
+        int H = _shape[1];
+        int W = _shape[2];
+        DType * ptr_data = _data;
+        std::vector<std::vector<std::vector<DType>>> ret3d(C);
+        for (int c = 0; c < C; c++) {
+            ret3d[c].resize(H);
+            for (int h = 0; h < H; h++) {
+                ret3d[c][h].resize(W);
+            }
+        }
+        for (int c = 0; c < C; c++) {
+            for (int h = 0; h < H; h++) {
+                for (int w = 0; w < W; w++) {
+                    ret3d[c][h][w] = *ptr_data++;
+                }
+            }
+        }
+        return ret3d;
     }
 };
 

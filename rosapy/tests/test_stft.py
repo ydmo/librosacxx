@@ -101,7 +101,7 @@ def __window_sumsquare(
 
     n = n_fft + hop_length * (n_frames - 1)
     x = np.zeros(n, dtype=dtype)
-    pdb.set_trace()
+    # pdb.set_trace()
     # Compute the squared window at the desired length
     win_sq = get_window(window, win_length)
     win_sq = util.normalize(win_sq, norm=norm) ** 2
@@ -144,7 +144,7 @@ def istft(
         hop_length = int(win_length // 4)
 
     ifft_window = get_window(window, win_length, fftbins=True)
-    
+
     # Pad out to match n_fft, and add a broadcasting axis
     ifft_window = util.pad_center(ifft_window, n_fft)[:, np.newaxis]
     
@@ -237,11 +237,17 @@ def Array_to_CXX_constexpr_str(ndarray, name):
         )
     return contents
 
+from scipy.signal.windows import hann
+
 # python -m rosapy.tests.test_stft
 if __name__ == '__main__':
-    outSc_real = np.fromfile('./rosapy/tests/data/outSc.real.bin', dtype=np.float32).reshape(2049, 5027)
-    outSc_imag = np.fromfile('./rosapy/tests/data/outSc.imag.bin', dtype=np.float32).reshape(2049, 5027)
-    outSc = outSc_real + outSc_imag * np.array(0+1j)
+
+
+
+    # outSc_real = np.fromfile('./rosapy/tests/data/outSc.real.bin', dtype=np.float32).reshape(2049, 5027)
+    # outSc_imag = np.fromfile('./rosapy/tests/data/outSc.imag.bin', dtype=np.float32).reshape(2049, 5027)
+
+    # outSc = outSc_real + outSc_imag * np.array(0+1j)
     # Yc_pred = istft(outSc, hop_length=1024, center=False)
     # Yc = np.fromfile('./rosapy/tests/data/Yc.bin', dtype=np.float32)
     # print("abs avg err: ", np.abs(Yc_pred - Yc).mean())
@@ -249,8 +255,13 @@ if __name__ == '__main__':
     # print("end.")
 
     hop_length = 1024
-    DatS = outSc[:, :100]
+    DatS = np.fromfile('./rosapy/tests/data/istft_S.bin', dtype=np.complex64).reshape(2049, 5027)
     DatY = istft(DatS, hop_length=hop_length, center=False)
+    DatY_gt = np.fromfile('./rosapy/tests/data/istft_Y.bin', dtype=np.float32)
+
+    print(np.abs(DatY-DatY_gt).max())
+
+    assert False
     
     contents = """
     #ifndef tests_data_istft

@@ -124,7 +124,7 @@ public: // static methods ......
         int size=ftell(fs);
         nc::NDArrayPtr<DType> y = nc::NDArrayPtr<DType>(new nc::NDArray<DType>({int(size/sizeof(DType))}));
         fseek(fs, 0L, SEEK_SET);
-        fread(y.data(), sizeof(float), y.elemCount(), fs);
+        fread(y.data(), sizeof(DType), y.elemCount(), fs);
         fclose(fs);
         return y;
     }

@@ -120,7 +120,7 @@ RetCQTFilterFFT __cqt_filter_fft(
     return ret;
 }
 
-#if __X86_SSE
+#if __SSE__
 nc::NDArrayCpxF32Ptr matmul_cpxf32_sse(const nc::NDArrayCpxF32Ptr& A, const nc::NDArrayCpxF32Ptr& B) {
 
     // Complex A = a + bj
@@ -250,7 +250,7 @@ nc::NDArrayCpxF32Ptr matmul_cpxf32_sse(const nc::NDArrayCpxF32Ptr& A, const nc::
 
     return C;
 }
-#endif // __X86_SSE
+#endif // __SSE__
 
 nc::NDArrayCpxF32Ptr __cqt_response(
         const nc::NDArrayF32Ptr& y,
@@ -261,7 +261,7 @@ nc::NDArrayCpxF32Ptr __cqt_response(
         const char* pad_mode = "reflect"
         ) {
     auto D = stft(y, n_fft, hop_length, -1, window, true, pad_mode);
-#   if __X86_SSE
+#   if __SSE__
     auto res = matmul_cpxf32_sse(fft_basis, D);
     return res;
 #   endif

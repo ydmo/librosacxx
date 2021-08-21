@@ -7,6 +7,18 @@
 #	ifdef _WIN64
 #       pragma mark define something for Windows (64-bit only)
 #	endif /* _WIN64 */
+#   ifndef __SSE__
+#       define __SSE__ 1
+#   endif /* __SSE__ */
+#   ifndef __AVX__
+#       define __AVX__ 1
+#   endif /* __AVX__ */
+#   if __SSE__
+#       define __X86_SSE 1
+#   endif // __SSE__
+#   if __AVX__
+#       define __X86_AVX 1
+#   endif // __AVX__
 #elif __APPLE__
 #    include <Availability.h>
 #    include <AvailabilityMacros.h>

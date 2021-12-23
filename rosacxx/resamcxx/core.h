@@ -23,7 +23,7 @@ inline nc::NDArrayPtr<DType> resample(
         const int& axis=-1,
         const char * filter="kaiser_best"
         ) {
-    if (sr_orig == sr_new) return x.clone();
+    if ((long)std::round(sr_orig) == (long)std::round(sr_new)) return x.clone();
 
     if (sr_orig <= 0) throw std::invalid_argument("Invaild sr_origin.");
     if (sr_new <= 0) throw std::invalid_argument("Invaild sr_new.");

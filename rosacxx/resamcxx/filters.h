@@ -19,9 +19,9 @@ namespace resam {
 
 template<typename DType>
 struct get_filter_ret {
-    nc::NDArrayPtr<DType> half_window = nullptr;
-    int precision = 0;
-    float rolloff = 0;
+    nc::NDArrayPtr<DType> half_window { nullptr };
+    int precision { 0 };
+    float rolloff { 0 };
 };
 
 typedef double * (*GetSTFTWindow)(const int&, const bool&);

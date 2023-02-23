@@ -21,7 +21,6 @@ protected:
     virtual void SetUp() override { }
 };
 
-
 TEST_F(ROSACXXTest, test_0x00_midi_to_hz) {
     std::vector<double> gt = {
         8.35482560e+00, 8.85162938e+00, 9.37797466e+00, 9.93561805e+00,

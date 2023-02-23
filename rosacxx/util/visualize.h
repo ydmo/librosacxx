@@ -1,6 +1,8 @@
 #ifndef ROSACXX_UTIL_VISUALIZE_H
 #define ROSACXX_UTIL_VISUALIZE_H
-#if ROSACXX_TEST
+
+#if ROSACXX_TESTS_VISUALIZE
+
 #include <opencv2/opencv.hpp>
 #include <rosacxx/numcxx/numcxx.h>
 
@@ -38,5 +40,7 @@ inline void ShowNDArray2DBool(const nc::NDArrayPtr<bool>& S, const char * window
 
 }
 }
-#endif
+
+#endif // 
+
 #endif // ROSACXX_UTIL_VISUALIZE_H

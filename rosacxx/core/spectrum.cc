@@ -109,6 +109,17 @@ template nc::NDArrayPtr<std::complex<float>> stft(
         const bool& __seqFirst
         );
 
+template nc::NDArrayPtr<std::complex<double>> stft(
+    const nc::NDArrayPtr<double>& __y,
+    const int& __n_fft,
+    const int& __hop_length,
+    const int& __win_length,
+    const filters::STFTWindowType& __window,
+    const bool& __center,
+    const char * __pad_mode,
+    const bool& __seqFirst
+    );
+
 template<typename DType>
 inline void __window_ss_fill(nc::NDArrayPtr<DType>& x, const nc::NDArrayPtr<DType>& win_sq, const int& n_frames, const int& hop_length) {
     int n = x.elemCount();

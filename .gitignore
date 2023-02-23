@@ -30,7 +30,9 @@
 *.exe
 *.out
 *.app
+*.rc
 
 CMakeLists.txt.user
 .vscode
 build
+libs-*

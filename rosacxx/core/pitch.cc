@@ -7,7 +7,7 @@
 #include <cmath>
 #include <map>
 
-#if ROSACXX_TEST
+#if ROSACXX_TESTS_VISUALIZE
 #   include <rosacxx/util/visualize.h>
 #endif
 

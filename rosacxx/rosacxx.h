@@ -67,6 +67,7 @@
 
 #include <cfloat>
 #include <memory>
+#include <algorithm>
 
 namespace rosacxx {
 

@@ -2,6 +2,7 @@
 #define NUMCXX_UTILS_H
 
 #include <vector>
+#include <algorithm>
 
 namespace nc {
 

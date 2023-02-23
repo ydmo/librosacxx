@@ -130,6 +130,10 @@ set(
     ${CMAKE_CURRENT_LIST_DIR}/rosacxx/feature/spectral.cc
     )
 
+if(BUILD_ROSACXX_TESTS) 
+    set(MY_VERSIONINFO_RC "")
+endif()
+
 if (BUILD_STATIC_LIB)
     my_add_library(rosacxx STATIC ${ROSACXX_SRCS} ${MY_VERSIONINFO_RC})
     set_target_properties(rosacxx PROPERTIES OUTPUT_NAME "rosacxx")
@@ -144,8 +148,6 @@ if (BUILD_ROSACXX_TESTS)
 
     add_definitions(-DROSACXX_TEST=1)
 
-    set(CMAKE_CXX_FLAGS_DEBUG "-g -D__DEBUG=1")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -D__NDEBUG=1")
     set(GTEST_SRCS ${CMAKE_CURRENT_LIST_DIR}/3rd/googletest/src/gtest-all.cc)
     add_library(googletest STATIC ${GTEST_SRCS})
     target_include_directories(googletest INTERFACE ${CMAKE_CURRENT_LIST_DIR}/3rd/googletest/src)

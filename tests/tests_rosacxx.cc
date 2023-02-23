@@ -774,6 +774,50 @@ TEST_F(ROSACXXTest, test_0x09_resample_kaiser_fast) {
     for (auto i = 0; i < ROSACXXTest_resample_kaiser_fast_dst_len; i++) {
         EXPECT_NEAR(ROSACXXTest_resample_kaiser_fast_dst_dat[i], dst.getitem(i), 1e-6);
     }
+
+    FILE * fs0 = fopen("F:\\MoYuda\\librosacxx\\assets\\realsing_dbg_0_Mic.pcm", "rb");
+    if (fs0) {
+        
+        void * srcData = NULL;
+        fseek(fs0, 0, SEEK_END);
+        auto srcBytes = ftell(fs0);
+        if (srcBytes > 0) {
+            srcData = malloc(srcBytes);
+            fseek(fs0, 0, SEEK_SET);
+            if (srcData) {
+                fread(srcData, 1, srcBytes, fs0);
+            }
+        }
+        fclose(fs0);
+
+        if (srcData) {
+            constexpr float maxShort = 32767.0f;
+            constexpr float maxShortInv = float(1. / double(maxShort));
+
+            constexpr int srcSR = 44100;
+            constexpr int dstSR = 11025;
+            constexpr int soundChs = 2;
+            constexpr int bits = 16;
+
+            int dim0 = srcBytes / (bits / 8) / soundChs;
+            int dim1 = soundChs;
+
+            nc::NDArrayS16Ptr srcChLastS16 = nc::NDArrayS16Ptr(new nc::NDArrayS16({ dim0, dim1 }, (short *)srcData));
+            nc::NDArrayS16Ptr srcChFirstS16 = srcChLastS16.T();
+            nc::NDArrayF32Ptr srcChFirstF32 = srcChFirstS16.astype<float>() * maxShortInv;
+            nc::NDArrayF32Ptr dstChFirst = rosacxx::core::resample(
+                srcChFirstF32,
+                srcSR,
+                dstSR,
+                "kaiser_fast",
+                true,
+                true
+            );
+            std::cout << "dstChFirst.shape => [" << dstChFirst.shape(0) << ", " << dstChFirst.shape(1) << "]" << std::endl;
+        }
+
+
+    }
 }
 
 TEST_F(ROSACXXTest, test_0x0a_vqt) { // CQT is the special case of VQT with gamma=0
@@ -888,7 +932,7 @@ TEST_F(ROSACXXTest, test_0x0c_istft) {
     int big_err_cnt = 0;
     for (auto i = 0; i < DatY.elemCount(); i++) {
         if (std::abs(DatY_pred.getitem(i) - DatY.getitem(i)) > 1e-4) {
-            std::cout << "[----------] DatY_pred.getitem(i) = " << DatY_pred.getitem(i) << " and DatY.getitem(i) = " << DatY.getitem(i) << " and abs err = " << std::abs(DatY_pred.getitem(i) - DatY.getitem(i)) << std::endl;
+            // std::cout << "[----------] DatY_pred.getitem(i) = " << DatY_pred.getitem(i) << " and DatY.getitem(i) = " << DatY.getitem(i) << " and abs err = " << std::abs(DatY_pred.getitem(i) - DatY.getitem(i)) << std::endl;
             big_err_cnt+=1;
         }
     }

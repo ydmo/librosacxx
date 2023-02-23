@@ -231,7 +231,7 @@ TEST_F(NCTest, reflect_pad1d) {
     {
         std::vector<float> pad_gt = { 3, 2, 1, 2, 3, 4, 5, 4, 3, 2, };
         auto pad = nc::reflect_pad1d(arr, {2, 3});
-        std::cout << pad << std::endl;
+        // std::cout << pad << std::endl;
         for (auto i = 0; i < pad.elemCount(); i++) {
             EXPECT_EQ(pad.getitem(i), pad_gt[i]);
         }
@@ -239,7 +239,7 @@ TEST_F(NCTest, reflect_pad1d) {
     {
         std::vector<float> pad_gt = { 3, 4, 5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3, 4, };
         auto pad = nc::reflect_pad1d(arr, {6, 7});
-        std::cout << pad << std::endl;
+        // std::cout << pad << std::endl;
         for (auto i = 0; i < pad.elemCount(); i++) {
             EXPECT_EQ(pad.getitem(i), pad_gt[i]);
         }
@@ -247,7 +247,7 @@ TEST_F(NCTest, reflect_pad1d) {
     {
         std::vector<float> pad_gt = { 4, 3, 2, 1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3, 2, 1, };
         auto pad = nc::reflect_pad1d(arr, {11, 12});
-        std::cout << pad << std::endl;
+        // std::cout << pad << std::endl;
         for (auto i = 0; i < pad.elemCount(); i++) {
             EXPECT_EQ(pad.getitem(i), pad_gt[i]);
         }

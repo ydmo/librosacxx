@@ -16,9 +16,9 @@ protected:
 
 TEST_F(FFTTest, rfft) {
     auto fft_ri = nc::arange(64.f);
-    std::cout << "fft input is " << fft_ri << std::endl;
+    // std::cout << "fft input is " << fft_ri << std::endl;
     auto fft_co = rosacxx::core::rfft(fft_ri, 64);
-    std::cout << "fft output is " << fft_co << std::endl;
+    // std::cout << "fft output is " << fft_co << std::endl;
     std::vector<float> fft_co_gt = {
         2016.  ,0.        ,  -32.,651.374964  ,  -32.,324.9014524 ,
         -32.,215.72647697,  -32.,160.87486375,  -32.,127.75116108,

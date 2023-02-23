@@ -32,7 +32,10 @@
 *.app
 *.rc
 
+# Extra
 CMakeLists.txt.user
 .vscode
 build
 libs-*
+assets
+*.pcm

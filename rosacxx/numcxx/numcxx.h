@@ -271,6 +271,17 @@ inline NDArrayS32Ptr argwhere(const NDArrayPtr<DType>& __arr) {
     return NDArrayS32Ptr::FromVec2D(coors);
 }
 
+template<typename DType>
+inline NDArrayPtr<DType> clip(const NDArrayPtr<DType>& __arr, DType minV, DType maxV) {
+    NDArrayPtr<DType> ret = NDArrayPtr<DType>(new NDArray<DType>(__arr.shape()));
+    DType * ptr_ret = ret.data();
+    DType * ptr_src = __arr.data();
+    for (int i = 0; i < __arr.elemCount(); i++) {
+        ptr_ret[i] = std::min(std::max(ptr_src[i], minV), maxV);
+    }
+    return ret;
+}
+
 template<typename DType = float>
 inline int len(const NDArrayPtr<DType>& __arr) {
     return __arr.shape()[0];

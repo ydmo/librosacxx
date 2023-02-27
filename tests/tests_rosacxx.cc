@@ -775,49 +775,90 @@ TEST_F(ROSACXXTest, test_0x09_resample_kaiser_fast) {
         EXPECT_NEAR(ROSACXXTest_resample_kaiser_fast_dst_dat[i], dst.getitem(i), 1e-6);
     }
 
-    FILE * fs0 = fopen("F:\\MoYuda\\librosacxx\\assets\\realsing_dbg_0_Mic.pcm", "rb");
-    if (fs0) {
-        
-        void * srcData = NULL;
-        fseek(fs0, 0, SEEK_END);
-        auto srcBytes = ftell(fs0);
-        if (srcBytes > 0) {
-            srcData = malloc(srcBytes);
-            fseek(fs0, 0, SEEK_SET);
-            if (srcData) {
-                fread(srcData, 1, srcBytes, fs0);
+    std::vector<std::string> pcms = {
+        "F:\\MoYuda\\librosacxx\\assets\\RECSING__2022_12_30_0_0_57_OS10.0_7C10C91CEB9F_5640584_48000_bgm.pcm",
+        "F:\\MoYuda\\librosacxx\\assets\\RECSING__2022_12_30_0_0_57_OS10.0_7C10C91CEB9F_5640584_48000_mix.pcm",
+        "F:\\MoYuda\\librosacxx\\assets\\RECSING__2022_12_30_0_16_39_OS10.0_50EBF6ECBBBF_1425267_48000_bgm.pcm",
+        "F:\\MoYuda\\librosacxx\\assets\\RECSING__2022_12_30_0_16_39_OS10.0_50EBF6ECBBBF_1425267_48000_mix.pcm",
+    };
+    for (auto pcm : pcms) {
+        FILE * fs0 = fopen(pcm.c_str(), "rb");
+        if (fs0) {
+
+            void * srcData = NULL;
+            fseek(fs0, 0, SEEK_END);
+            auto srcBytes = ftell(fs0);
+            if (srcBytes > 0) {
+                srcData = malloc(srcBytes);
+                fseek(fs0, 0, SEEK_SET);
+                if (srcData) {
+                    fread(srcData, 1, srcBytes, fs0);
+                }
             }
+            fclose(fs0);
+
+            if (srcData) {
+                constexpr float maxShort = 32767.0f;
+                constexpr float maxShortInv = float(1. / double(maxShort));
+
+                constexpr int srcSR = 48000;
+                constexpr int dstSR = 11025;
+                constexpr int soundChs = 1;
+                constexpr int bits = 16;
+
+                int dim0 = 480000; // srcBytes / (bits / 8) / soundChs;
+
+                std::vector<int> srcShape = { dim0 };
+                if (soundChs > 1) srcShape.push_back(soundChs);
+
+                nc::NDArrayS16Ptr srcChLastS16 = nc::NDArrayS16Ptr(new nc::NDArrayS16(srcShape, (short *)srcData));
+                
+                nc::NDArrayS16Ptr srcChFirstS16 = nullptr;
+                if (soundChs > 1) {
+                    srcChFirstS16 = srcChLastS16.T();
+                }
+                else {
+                    srcChFirstS16 = srcChLastS16;
+                }
+
+                nc::NDArrayF32Ptr srcChFirstF32 = srcChFirstS16.astype<float>() * maxShortInv;
+                
+                nc::NDArrayF32Ptr dstChFirstF32 = rosacxx::core::resample(
+                    srcChFirstF32,
+                    srcSR,
+                    dstSR,
+                    "kaiser_fast",
+                    true,
+                    true
+                );
+
+                dstChFirstF32 = nc::clip(dstChFirstF32, srcChFirstF32.min(), srcChFirstF32.max());
+                
+                std::cout << srcChFirstF32.min() << "," << srcChFirstF32.max() << std::endl;
+                std::cout << dstChFirstF32.min() << "," << dstChFirstF32.max() << std::endl;
+                
+                dstChFirstF32 *= 32767.0f;
+                nc::NDArrayS16Ptr dstChFirstS16 = dstChFirstF32.astype<short>();
+                
+                nc::NDArrayS16Ptr dstChLastS16 = nullptr;
+                if (soundChs > 1) {
+                    dstChLastS16 = dstChFirstS16.T();
+                }
+                else {
+                    dstChLastS16 = dstChFirstS16;
+                }
+                
+                std::string outpcm = pcm + ".output.pcm";
+                FILE * fs1 = fopen(outpcm.c_str(), "wb+");
+                fwrite(dstChLastS16.data(), 1, dstChLastS16.bytesCount(), fs1);
+                fclose(fs1);
+
+                free(srcData);
+            }
+
         }
-        fclose(fs0);
-
-        if (srcData) {
-            constexpr float maxShort = 32767.0f;
-            constexpr float maxShortInv = float(1. / double(maxShort));
-
-            constexpr int srcSR = 44100;
-            constexpr int dstSR = 11025;
-            constexpr int soundChs = 2;
-            constexpr int bits = 16;
-
-            int dim0 = srcBytes / (bits / 8) / soundChs;
-            int dim1 = soundChs;
-
-            nc::NDArrayS16Ptr srcChLastS16 = nc::NDArrayS16Ptr(new nc::NDArrayS16({ dim0, dim1 }, (short *)srcData));
-            nc::NDArrayS16Ptr srcChFirstS16 = srcChLastS16.T();
-            nc::NDArrayF32Ptr srcChFirstF32 = srcChFirstS16.astype<float>() * maxShortInv;
-            nc::NDArrayF32Ptr dstChFirst = rosacxx::core::resample(
-                srcChFirstF32,
-                srcSR,
-                dstSR,
-                "kaiser_fast",
-                true,
-                true
-            );
-            std::cout << "dstChFirst.shape => [" << dstChFirst.shape(0) << ", " << dstChFirst.shape(1) << "]" << std::endl;
-        }
-
-
     }
+    
 }
 
 TEST_F(ROSACXXTest, test_0x0a_vqt) { // CQT is the special case of VQT with gamma=0

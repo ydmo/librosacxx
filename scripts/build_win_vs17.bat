@@ -32,6 +32,7 @@ mkdir .\\libs-vs17\\include\\rosacxx\\feature
 mkdir .\\libs-vs17\\include\\rosacxx\\half
 mkdir .\\libs-vs17\\include\\rosacxx\\numcxx
 mkdir .\\libs-vs17\\include\\rosacxx\\resamcxx
+mkdir .\\libs-vs15\\include\\rosacxx\\util
 copy .\\rosacxx\\rosacxx.h                    .\\libs-vs17\\include\\rosacxx\\rosacxx.h
 copy .\\rosacxx\\filters.h                    .\\libs-vs17\\include\\rosacxx\\filters.h
 copy .\\rosacxx\\util\\utils.h                .\\libs-vs17\\include\\rosacxx\\util\\utils.h

@@ -8,7 +8,7 @@ call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary
 call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Auxiliary\Build\vcvars64.bat"
 mkdir .\\libs-vs15\\proj_x64
 cd .\\libs-vs15\\proj_x64
-cmake ..\\.. -G "Visual Studio 15 2017" -A x64 -DBUILD_ROSACXX_TESTS=OFF -DBUILD_ROSACXX_FFT_WITH_SINGLE_PRECISION=ON -DBUILD_STATIC_LIB=OFF
+cmake ..\\.. -G "Visual Studio 15 2017" -A x64 -DBUILD_ROSACXX_TESTS=OFF -DBUILD_ROSACXX_FFT_WITH_SINGLE_PRECISION=ON -DBUILD_STATIC_LIB=ON
 devenv rosacxx.sln /Rebuild Debug   /Out log.txt
 devenv rosacxx.sln /Rebuild Release /Out log.txt
 cd ..\\..
@@ -17,7 +17,7 @@ call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary
 call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Auxiliary\Build\vcvars32.bat"
 mkdir .\\libs-vs15\\proj_x86
 cd .\\libs-vs15\\proj_x86
-cmake ..\\.. -G "Visual Studio 15 2017" -A Win32 -DBUILD_ROSACXX_TESTS=OFF -DBUILD_ROSACXX_FFT_WITH_SINGLE_PRECISION=ON -DBUILD_STATIC_LIB=OFF
+cmake ..\\.. -G "Visual Studio 15 2017" -A Win32 -DBUILD_ROSACXX_TESTS=OFF -DBUILD_ROSACXX_FFT_WITH_SINGLE_PRECISION=ON -DBUILD_STATIC_LIB=ON
 devenv rosacxx.sln /Rebuild Debug   /Out log.txt
 devenv rosacxx.sln /Rebuild Release /Out log.txt
 cd ..\\..
@@ -32,6 +32,7 @@ mkdir .\\libs-vs15\\include\\rosacxx\\feature
 mkdir .\\libs-vs15\\include\\rosacxx\\half
 mkdir .\\libs-vs15\\include\\rosacxx\\numcxx
 mkdir .\\libs-vs15\\include\\rosacxx\\resamcxx
+mkdir .\\libs-vs15\\include\\rosacxx\\util
 copy .\\rosacxx\\rosacxx.h                    .\\libs-vs15\\include\\rosacxx\\rosacxx.h
 copy .\\rosacxx\\filters.h                    .\\libs-vs15\\include\\rosacxx\\filters.h
 copy .\\rosacxx\\util\\utils.h                .\\libs-vs15\\include\\rosacxx\\util\\utils.h

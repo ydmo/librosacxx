@@ -48,6 +48,19 @@ TEST_F(NCTest, FromVec2D) {
 
 TEST_F(NCTest, Add) {
     {
+        float data[240000] = { 0.f };
+        for (int i = 0; i < 240000; i++) {
+            data[i] = rand() % 100;
+        }
+        auto arr0 = nc::NDArrayF32Ptr(new nc::NDArrayF32({ 3, 80000 }, data));
+        auto arr1 = arr0 + 1.f;
+        for (auto i = 0; i < arr0.shape(0); i++) {
+            for (auto j = 0; j < arr0.shape(1); j++) {
+                EXPECT_NEAR(arr1.getitem(i, j), data[i* 80000 +j] + 1.f, 1e-9);
+            }
+        }
+    }
+    {
         std::vector<std::vector<float>> vec2d = {{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f}};
         auto arr0 = nc::NDArrayPtr<float>::FromVec2D(vec2d);
         auto arr1 = arr0 + 1.f;

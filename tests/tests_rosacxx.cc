@@ -776,10 +776,8 @@ TEST_F(ROSACXXTest, test_0x09_resample_kaiser_fast) {
     }
 
     std::vector<std::string> pcms = {
-        "F:\\MoYuda\\librosacxx\\assets\\RECSING__2022_12_30_0_0_57_OS10.0_7C10C91CEB9F_5640584_48000_bgm.pcm",
-        "F:\\MoYuda\\librosacxx\\assets\\RECSING__2022_12_30_0_0_57_OS10.0_7C10C91CEB9F_5640584_48000_mix.pcm",
-        "F:\\MoYuda\\librosacxx\\assets\\RECSING__2022_12_30_0_16_39_OS10.0_50EBF6ECBBBF_1425267_48000_bgm.pcm",
-        "F:\\MoYuda\\librosacxx\\assets\\RECSING__2022_12_30_0_16_39_OS10.0_50EBF6ECBBBF_1425267_48000_mix.pcm",
+        "F:\\MoYuda\\librosacxx\\assets\\realsing_dbg_0_Rec.pcm",
+        "F:\\MoYuda\\librosacxx\\assets\\realsing_dbg_0_Mic.pcm",
     };
     for (auto pcm : pcms) {
         FILE * fs0 = fopen(pcm.c_str(), "rb");
@@ -806,7 +804,7 @@ TEST_F(ROSACXXTest, test_0x09_resample_kaiser_fast) {
                 constexpr int soundChs = 1;
                 constexpr int bits = 16;
 
-                int dim0 = 480000; // srcBytes / (bits / 8) / soundChs;
+                int dim0 = srcBytes / (bits / 8) / soundChs;
 
                 std::vector<int> srcShape = { dim0 };
                 if (soundChs > 1) srcShape.push_back(soundChs);

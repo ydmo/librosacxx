@@ -17,6 +17,34 @@ inline size_t alignUp(const size_t& __size, const size_t& __align) {
     return ((__size + alignment_mask) & (~alignment_mask));
 }
 
+inline void * alignedMalloc(size_t alignment, size_t size) {
+    size_t offset = alignment - 1 + sizeof(void*);
+    void* originalP = malloc(size + offset);
+    size_t originalLocation = reinterpret_cast<size_t>(originalP);
+    size_t realLocation = (originalLocation + offset) & ~(alignment - 1);
+    void* realP = reinterpret_cast<void*>(realLocation);
+    size_t originalPStorage = realLocation - sizeof(void*);
+    *reinterpret_cast<void**>(originalPStorage) = originalP;
+    return realP;
+}
+
+inline void * alignedCalloc(size_t alignment, size_t size) {
+    size_t offset = alignment - 1 + sizeof(void*);
+    void* originalP = calloc(size + offset, 1);
+    size_t originalLocation = reinterpret_cast<size_t>(originalP);
+    size_t realLocation = (originalLocation + offset) & ~(alignment - 1);
+    void* realP = reinterpret_cast<void*>(realLocation);
+    size_t originalPStorage = realLocation - sizeof(void*);
+    *reinterpret_cast<void**>(originalPStorage) = originalP;
+    return realP;
+}
+
+inline void alignedFree(void* p) {
+    size_t originalPStorage = reinterpret_cast<size_t>(p) - sizeof(void*);
+    free(*reinterpret_cast<void**>(originalPStorage));
+}
+
+/*
 inline void * alignedMalloc(size_t __alignment, size_t __size) {
 #   ifdef _WIN32
     return _aligned_malloc(alignUp(__size, __alignment), __alignment);
@@ -65,7 +93,7 @@ inline void alignedFree(void * __p) {
     free(__p);
 #   endif
 }
-
+*/
 } // namespace nc
 
 #endif // ALIGNMALLOC_H

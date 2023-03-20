@@ -46,13 +46,44 @@ TEST_F(NCTest, FromVec2D) {
     }
 }
 
-TEST_F(NCTest, Add) {
+TEST_F(NCTest, Windows_msize) {
+    {
+        float *data = (float *)calloc(240000, sizeof(float)); // [240000] = { 0.f };
+        for (int i = 0; i < 240000; i++) {
+            data[i] = rand() % 100;
+        }
+        EXPECT_EQ(_msize(data), 240000);
+    }
     {
         float data[240000] = { 0.f };
         for (int i = 0; i < 240000; i++) {
             data[i] = rand() % 100;
         }
-        auto arr0 = nc::NDArrayF32Ptr(new nc::NDArrayF32({ 3, 80000 }, data));
+        EXPECT_EQ(_msize(data), 240000);
+    }
+}
+
+TEST_F(NCTest, Add) {
+    {
+        float *data = (float *)calloc(240000, sizeof(float)); // [240000] = { 0.f };
+        for (int i = 0; i < 240000; i++) {
+            data[i] = rand() % 100;
+        }
+        auto arr0 = nc::NDArrayF32Ptr::Create({ 4, 80000 }, data);
+        auto arr1 = arr0 + 1.f;
+        for (auto i = 0; i < arr0.shape(0); i++) {
+            for (auto j = 0; j < arr0.shape(1); j++) {
+                EXPECT_NEAR(arr1.getitem(i, j), data[i * 80000 + j] + 1.f, 1e-9);
+            }
+        }
+        free(data);
+    }
+    {
+        float data[240000] = { 0.f };
+        for (int i = 0; i < 240000; i++) {
+            data[i] = rand() % 100;
+        }
+        auto arr0 = nc::NDArrayF32Ptr::Create({ 4, 80000 }, data);
         auto arr1 = arr0 + 1.f;
         for (auto i = 0; i < arr0.shape(0); i++) {
             for (auto j = 0; j < arr0.shape(1); j++) {

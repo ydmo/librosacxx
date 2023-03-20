@@ -118,6 +118,34 @@ public:
 
 public: // static methods ......
 
+    static NDArrayPtr Create(const std::vector<int>& __shape, const DType * __dat) {
+        size_t elemCnt = 1;
+        for (const int& s : __shape) {
+            elemCnt *= s;
+        }
+        if (elemCnt == 0) {
+            printf("Invaild input shape.\n");
+            return nullptr;
+        }
+        size_t bytes = elemCnt * sizeof(DType);
+        #ifdef _WIN32
+        if (__dat) {
+            try {
+                size_t inMemSize = _msize((void *)const_cast<DType *>(__dat));
+                if (inMemSize < bytes) {
+                    printf("Invaild input mem pointer.\n");
+                    return nullptr;
+                }
+            }
+            catch (std::exception& e) {
+                printf("%s", e.what());
+            }
+        }
+        #endif // _WIN32
+        nc::NDArrayPtr<DType> p = nc::NDArrayPtr<DType>(new nc::NDArray<DType>(__shape, __dat));
+        return p;
+    }
+
     static NDArrayPtr FromBinaryFile(const char * i_file) {
         FILE *fs = fopen(i_file, "rb");
         fseek(fs,0L,SEEK_END);

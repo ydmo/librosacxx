@@ -147,26 +147,17 @@ public: // static methods ......
             elemCnt *= s;
         }
         if (elemCnt == 0) {
-            printf("Invaild input shape.\n");
+            throw std::runtime_error("[numcxx] Invaild input shape.");
             return nullptr;
         }
         size_t bytes = elemCnt * sizeof(DType);
-        #ifdef _WIN32
-        if (__dat) {
-            try {
-                size_t inMemSize = _msize((void *)const_cast<DType *>(__dat));
-                if (inMemSize < bytes) {
-                    printf("Invaild input mem pointer.\n");
-                    return nullptr;
-                }
-            }
-            catch (std::exception& e) {
-                printf("%s", e.what());
-            }
+        auto p = new nc::NDArray<DType>(__shape, __dat);
+        if (p == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
         }
-        #endif // _WIN32
-        nc::NDArrayPtr<DType> p = nc::NDArrayPtr<DType>(new nc::NDArray<DType>(__shape, __dat));
-        return p;
+        nc::NDArrayPtr<DType> sptr = nc::NDArrayPtr<DType>(p);
+        return sptr;
     }
 
     static NDArrayPtr FromBinaryFile(const char * i_file) {
@@ -224,7 +215,7 @@ public: // static methods ......
         }
         for (auto i = 1; i < __vec2d.size(); i++) {
             if (__vec2d[0].size() != __vec2d[i].size()) {
-                throw std::runtime_error("Invaild input shape.");
+                throw std::runtime_error("[numcxx] Invaild input shape.");
             }
         }
         auto p = new NDArray<DType>({ int(__vec2d.size()), int(__vec2d[0].size()) });

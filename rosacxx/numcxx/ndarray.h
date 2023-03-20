@@ -21,12 +21,14 @@ public:
     ~NDArray() {
         _shape.clear();
         if (_data) {
-            alignedFree(_data); _data = NULL;
+            alignedFree(_data); 
+            _data = NULL;
         }
     }
 
     NDArray() {
         _shape.clear();
+        _strides.clear();
         _data = NULL;
     }
 
@@ -36,6 +38,9 @@ public:
            elemCnt *= s;
         }
         _data = (DType *)alignedCalloc(32, elemCnt * sizeof (DType));
+        if (_data == NULL) {
+            throw std::runtime_error("[numcxx] alignedCalloc failed, may out of memory.");
+        }
         _strides.resize(__shape.size());
         int tmp = 1;
         for (int i = _strides.size() - 1; i >= 0; i--) {
@@ -50,11 +55,20 @@ public:
         for (const int& s : __shape) {
            elemCnt *= s;
         }
+        if (elemCnt == 0) {
+            throw std::runtime_error("[numcxx] Invaild input shape for construct NDArray.");
+        }
         if (__val == 0) {
             _data = (DType *)alignedCalloc(32, elemCnt * sizeof (DType));
+            if (_data == NULL) {
+                throw std::runtime_error("[numcxx] alignedCalloc failed, may out of memory.");
+            }
         }
         else {
             _data = (DType *)alignedMalloc(32, elemCnt * sizeof (DType));
+            if (_data == NULL) {
+                throw std::runtime_error("[numcxx] alignedMalloc failed, may out of memory.");
+            }
             for (int n = 0; n < elemCnt; n++) {
                 _data[n] = __val;
             }
@@ -72,11 +86,20 @@ public:
         for (const int& s : __shape) {
            elemCnt *= s;
         }
+        if (elemCnt == 0) {
+            throw std::runtime_error("[numcxx] Invaild input shape for construct NDArray.");
+        }
         if (__dat == NULL) {
             _data = (DType *)alignedCalloc(32, elemCnt * sizeof (DType));
+            if (_data == NULL) {
+                throw std::runtime_error("[numcxx] alignedCalloc failed, may out of memory.");
+            }
         }
         else {
             _data = (DType *)alignedMalloc(32, elemCnt * sizeof (DType));
+            if (_data == NULL) {
+                throw std::runtime_error("[numcxx] alignedMalloc failed, may out of memory.");
+            }
             for (int n = 0; n < elemCnt; n++) {
                 _data[n] = __dat[n];
             }
@@ -90,9 +113,9 @@ public:
     }
 
 private:
-    std::vector<int> _strides;
-    std::vector<int> _shape;
-    DType *          _data;
+    std::vector<int> _strides{ {} };
+    std::vector<int> _shape{ {} };
+    DType* _data{ NULL };
 };
 
 #ifdef HALF_HALF_HPP
@@ -148,9 +171,19 @@ public: // static methods ......
 
     static NDArrayPtr FromBinaryFile(const char * i_file) {
         FILE *fs = fopen(i_file, "rb");
+        if (fs == NULL) {
+            throw std::runtime_error("[numcxx] Failed to open binary file.");
+            return nullptr;
+        }
         fseek(fs,0L,SEEK_END);
         int size=ftell(fs);
-        nc::NDArrayPtr<DType> y = nc::NDArrayPtr<DType>(new nc::NDArray<DType>({int(size/sizeof(DType))}));
+        auto p = new nc::NDArray<DType>({ int(size / sizeof(DType)) });
+        if (p == nullptr) {
+            fclose(fs);
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        nc::NDArrayPtr<DType> y = nc::NDArrayPtr<DType>(p);
         fseek(fs, 0L, SEEK_SET);
         fread(y.data(), sizeof(DType), y.elemCount(), fs);
         fclose(fs);
@@ -158,61 +191,88 @@ public: // static methods ......
     }
 
     static NDArrayPtr FromScalar(const DType& __scalar) {
-        return NDArrayPtr(new NDArray<DType>({1}, __scalar));
+        auto p = new NDArray<DType>({ 1 }, __scalar);
+        if (p == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        return NDArrayPtr(p);
     }
 
     static NDArrayPtr FromVec1D(const std::vector<DType>& __vec) {
         if (__vec.size() == 0) {
-            throw std::runtime_error("Invaild shape at dimension 0");
+            throw std::runtime_error("[numcxx] Invaild shape at dimension 0");
         }
-        auto p = NDArrayPtr(new NDArray<DType>({int(__vec.size())}));
-        memcpy(p->_data, __vec.data(), __vec.size() * sizeof (DType));
-        return p;
+        auto p = new NDArray<DType>({ int(__vec.size()) });
+        if (p == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto sptr = NDArrayPtr(p);
+        memcpy(sptr->_data, __vec.data(), __vec.size() * sizeof (DType));
+        return sptr;
     }
 
     static NDArrayPtr FromVec2D(const std::vector<std::vector<DType>>& __vec2d) {
         if (__vec2d.size() == 0) {
-            throw std::runtime_error("Invaild shape at dimension 0");
+            throw std::runtime_error("[numcxx] Invaild shape at dimension 0");
+            return nullptr;
         }
         if (__vec2d[0].size() == 0) {
-            throw std::runtime_error("Invaild shape at dimension 1");
+            throw std::runtime_error("[numcxx] Invaild shape at dimension 1");
+            return nullptr;
         }
         for (auto i = 1; i < __vec2d.size(); i++) {
             if (__vec2d[0].size() != __vec2d[i].size()) {
                 throw std::runtime_error("Invaild input shape.");
             }
         }
-        auto p = NDArrayPtr(new NDArray<DType>({int(__vec2d.size()), int(__vec2d[0].size())}));
-        auto ptr_p = p->_data;
-        for (auto i = 0; i < p->_shape[0]; i++) {
-            for (auto j = 0; j < p->_shape[1]; j++) {
-                ptr_p[i * p->_shape[1] + j] = __vec2d[i][j];
+        auto p = new NDArray<DType>({ int(__vec2d.size()), int(__vec2d[0].size()) });
+        if (p == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto sptr = NDArrayPtr(p);
+        auto ptr_p = sptr->_data;
+        for (auto i = 0; i < sptr->_shape[0]; i++) {
+            for (auto j = 0; j < sptr->_shape[1]; j++) {
+                ptr_p[i * sptr->_shape[1] + j] = __vec2d[i][j];
             }
         }
-        return p;
+        return sptr;
     }
 
     static NDArrayPtr FromVec3D(const std::vector<std::vector<std::vector<DType>>>& __vec3d) {
-        auto p = NDArrayPtr(new NDArray<DType>({int(__vec3d.size()), int(__vec3d[0].size()), int(__vec3d[0][0].size()), }));
-        auto ptr_p = p->_data;
-        for (auto i = 0; i < p->_shape[0]; i++) {
-            for (auto j = 0; j < p->_shape[1]; j++) {
-                for (auto k = 0; k < p->_shape[2]; k++) {
-                    ptr_p[i * p->_strides[0] + j * p->_strides[1] + k] = __vec3d[i][j][k];
+        auto p = new NDArray<DType>({ int(__vec3d.size()), int(__vec3d[0].size()), int(__vec3d[0][0].size()), });
+        if (p == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto sptr = NDArrayPtr(p);
+        auto ptr_p = sptr->_data;
+        for (auto i = 0; i < sptr->_shape[0]; i++) {
+            for (auto j = 0; j < sptr->_shape[1]; j++) {
+                for (auto k = 0; k < sptr->_shape[2]; k++) {
+                    ptr_p[i * sptr->_strides[0] + j * sptr->_strides[1] + k] = __vec3d[i][j][k];
                 }
             }
         }
-        return p;
+        return sptr;
     }
 
     static NDArrayPtr FromVecOfPair(const std::vector<std::pair<DType, DType>>& __vop) {
-        auto arr = NDArrayPtr(new NDArray<DType>({ int(__vop.size()), 2 }));
-        DType * ptr_arr = arr->_data;
+        auto p = new NDArray<DType>({ int(__vop.size()), 2 });
+        if (p == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto sptr = NDArrayPtr(p);
+        DType * ptr_arr = sptr->_data;
         for (size_t i = 0; i < __vop.size(); i++) {
             *ptr_arr++ = __vop[i].first;
             *ptr_arr++ = __vop[i].second;
         }
-        return arr;
+        return sptr;
     }
 
 public: // dynamic methods .....
@@ -220,7 +280,12 @@ public: // dynamic methods .....
     inline NDArrayPtr clone() const {
         auto _data = get()->_data;
         auto _shape = get()->_shape;
-        auto sptr_clone = NDArrayPtr(new NDArray<DType>(_shape));
+        auto p = new NDArray<DType>(_shape);
+        if (p == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto sptr_clone = NDArrayPtr(p);
         memcpy(sptr_clone->_data, _data, bytesCount());
         return sptr_clone;
     }
@@ -445,9 +510,14 @@ public: // dynamic methods .....
                 if (__mask.getitem(i)) vec_res.push_back(get()->_data[i]);
             }
             if (vec_res.size() == 0) return nullptr;
-            auto p = NDArrayPtr(new NDArray<DType>({int(vec_res.size())}));
-            memcpy(p->_data, vec_res.data(), vec_res.size() * sizeof (DType));
-            return p;
+            auto p = new NDArray<DType>({ int(vec_res.size()) });
+            if (p == nullptr) {
+                throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+                return nullptr;
+            }
+            auto sptr = NDArrayPtr(p);
+            memcpy(sptr->_data, vec_res.data(), vec_res.size() * sizeof (DType));
+            return sptr;
         }
         else {
             throw std::runtime_error("Not implemented.");
@@ -476,7 +546,12 @@ public: // dynamic methods .....
         auto _data = get()->_data;
         auto _shape = get()->_shape;
         auto _strides = get()->_strides;
-        auto ret = NDArrayPtr<DType>(new NDArray<DType>(_shape));
+        auto p = new NDArray<DType>(_shape);
+        if (p == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto ret = NDArrayPtr<DType>(p);
         auto ptr_ret = ret.data();
         for (auto i = 0; i < elemCount(); i++) {
             ptr_ret[i] = _data[i] + rhs;
@@ -489,7 +564,12 @@ public: // dynamic methods .....
         auto _data = get()->_data;
         auto _shape = get()->_shape;
         auto _strides = get()->_strides;
-        auto ret = NDArrayPtr<DType>(new NDArray<DType>(_shape));
+        auto p = new NDArray<DType>(_shape);
+        if (p == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto ret = NDArrayPtr<DType>(p);
         auto ptr_ret = ret.data();
         for (auto i = 0; i < elemCount(); i++) {
             ptr_ret[i] = _data[i] * rhs;
@@ -502,7 +582,12 @@ public: // dynamic methods .....
         auto _shape = get()->_shape;
         auto _strides = get()->_strides;
         if (_shape == rhs.shape()) { // is elementwise operation
-            auto ret = NDArrayPtr<DType>(new NDArray<DType>(_shape));
+            auto p = new NDArray<DType>(_shape);
+            if (p == nullptr) {
+                throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+                return nullptr;
+            }
+            auto ret = NDArrayPtr<DType>(p);
             DType * ptr_ret = ret.data();
             DType * ptr_rhs = rhs.data();
             for (auto i = 0; i < elemCount(); i++) {
@@ -521,7 +606,12 @@ public: // dynamic methods .....
         auto _shape = get()->_shape;
         auto _strides = get()->_strides;
         if (_shape == rhs.shape()) { // is elementwise operation
-            auto ret = NDArrayPtr<DType>(new NDArray<DType>(_shape));
+            auto p = new NDArray<DType>(_shape);
+            if (p == nullptr) {
+                throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+                return nullptr;
+            }
+            auto ret = NDArrayPtr<DType>(p);
             DType * ptr_ret = ret.data();
             DType * ptr_rhs = rhs.data();
             for (auto i = 0; i < elemCount(); i++) {
@@ -542,7 +632,12 @@ public: // dynamic methods .....
         auto _strides = get()->_strides;
         // -------
         if (_shape == rhs.shape()) { // is elementwise operation
-            auto ret = NDArrayPtr<DType>(new NDArray<DType>(_shape));
+            auto p = new NDArray<DType>(_shape);
+            if (p == nullptr) {
+                throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+                return nullptr;
+            }
+            auto ret = NDArrayPtr<DType>(p);
             DType * ptr_ret = ret.data();
             RType * ptr_rhs = rhs.data();
             for (auto i = 0; i < elemCount(); i++) {
@@ -554,8 +649,12 @@ public: // dynamic methods .....
             std::vector<int> dims0 = _shape;
             std::vector<int> dims1 = rhs.shape();
             std::vector<int> dims2 = _get_broadcast_op_shape(_shape, dims1);
-
-            NDArrayPtr<DType> ret = NDArrayPtr<DType>(new NDArray<DType>(dims2));
+            auto p = new NDArray<DType>(dims2);
+            if (p == nullptr) {
+                throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+                return nullptr;
+            }
+            NDArrayPtr<DType> ret = NDArrayPtr<DType>(p);
 
             int msize = dims2.size();
 
@@ -628,7 +727,12 @@ public: // dynamic methods .....
         auto _strides = get()->_strides;
         // -------
         if (_shape == rhs.shape()) { // is elementwise operation
-            auto ret = NDArrayPtr<bool>(new NDArray<bool>(_shape));
+            auto p = new NDArray<bool>(_shape);
+            if (p == nullptr) {
+                throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+                return nullptr;
+            }
+            auto ret = NDArrayPtr<bool>(p);
             bool * ptr_ret = ret.data();
             DType * ptr_rhs = rhs.data();
             for (auto i = 0; i < elemCount(); i++) {
@@ -641,7 +745,12 @@ public: // dynamic methods .....
             std::vector<int> dims1 = rhs.shape();
             std::vector<int> dims2 = _get_broadcast_op_shape(_shape, dims1);
 
-            NDArrayPtr<bool> ret = NDArrayPtr<bool>(new NDArray<bool>(dims2));
+            auto p = new NDArray<bool>(dims2);
+            if (p == nullptr) {
+                throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+                return nullptr;
+            }
+            NDArrayPtr<bool> ret = NDArrayPtr<bool>(p);
 
             int msize = dims2.size();
 
@@ -714,7 +823,12 @@ public: // dynamic methods .....
         auto _strides = get()->_strides;
         // -------
         if (_shape == rhs.shape()) { // is elementwise operation
-            auto ret = NDArrayPtr<bool>(new NDArray<bool>(_shape));
+            auto p = new NDArray<bool>(_shape);
+            if (p == nullptr) {
+                throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+                return nullptr;
+            }
+            auto ret = NDArrayPtr<bool>(p);
             bool * ptr_ret = ret.data();
             DType * ptr_rhs = rhs.data();
             for (auto i = 0; i < elemCount(); i++) {
@@ -727,7 +841,12 @@ public: // dynamic methods .....
             std::vector<int> dims1 = rhs.shape();
             std::vector<int> dims2 = _get_broadcast_op_shape(_shape, dims1);
 
-            NDArrayPtr<bool> ret = NDArrayPtr<bool>(new NDArray<bool>(dims2));
+            auto p = new NDArray<bool>(dims2);
+            if (p == nullptr) {
+                throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+                return nullptr;
+            }
+            NDArrayPtr<bool> ret = NDArrayPtr<bool>(p);
 
             int msize = dims2.size();
 
@@ -798,7 +917,12 @@ public: // dynamic methods .....
         auto _shape = get()->_shape;
         auto _strides = get()->_strides;
         if (_shape == rhs.shape()) { // is elementwise operation
-            auto ret = NDArrayPtr<DType>(new NDArray<DType>(_shape));
+            auto p = new NDArray<DType>(_shape);
+            if (p == nullptr) {
+                throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+                return nullptr;
+            }
+            auto ret = NDArrayPtr<DType>(p);
             DType * ptr_ret = ret.data();
             DType * ptr_rhs = rhs.data();
             for (auto i = 0; i < elemCount(); i++) {
@@ -817,7 +941,12 @@ public: // dynamic methods .....
         auto _shape = get()->_shape;
         auto _strides = get()->_strides;
         if (_shape == rhs.shape()) { // is elementwise operation
-            auto ret = NDArrayPtr<DType>(new NDArray<DType>(_shape));
+            auto p = new NDArray<DType>(_shape);
+            if (p == nullptr) {
+                throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+                return nullptr;
+            }
+            auto ret = NDArrayPtr<DType>(p);
             DType * ptr_ret = ret.data();
             bool * ptr_rhs = rhs.data();
             for (auto i = 0; i < elemCount(); i++) {
@@ -835,7 +964,12 @@ public: // dynamic methods .....
     NDArrayPtr<bool> operator < (const RType& rhs) const {
         auto _data = get()->_data;
         auto _shape = get()->_shape;
-        auto ret = NDArrayPtr<bool>(new NDArrayBool(_shape));
+        auto p = new NDArrayBool(_shape);
+        if (p == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto ret = NDArrayPtr<bool>(p);
         bool * ptr_ret = ret.data();
         for (auto i = 0; i < ret.elemCount(); i++) {
             if (_data[i] < rhs) ptr_ret[i] = true;
@@ -847,7 +981,12 @@ public: // dynamic methods .....
     NDArrayPtr<bool> operator <= (const RType& rhs) {
         auto _data = get()->_data;
         auto _shape = get()->_shape;
-        NDArrayPtr<bool> ret = NDArrayPtr<bool>(new NDArrayBool(_shape));
+        auto p = new NDArrayBool(_shape);
+        if (p == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        NDArrayPtr<bool> ret = NDArrayPtr<bool>(p);
         bool * ptr_ret = ret.data();
         for (auto i = 0; i < ret.elemCount(); i++) {
             if (_data[i] <= rhs) ptr_ret[i] = true;
@@ -859,7 +998,12 @@ public: // dynamic methods .....
     NDArrayPtr<bool> operator > (const RType& rhs) const {
         auto _data = get()->_data;
         auto _shape = get()->_shape;
-        auto ret = NDArrayPtr<bool>(new NDArrayBool(_shape));
+        auto p = new NDArrayBool(_shape);
+        if (p == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto ret = NDArrayPtr<bool>(p);
         bool * ptr_ret = ret.data();
         for (auto i = 0; i < ret.elemCount(); i++) {
             if (_data[i] > rhs) ptr_ret[i] = true;
@@ -871,7 +1015,12 @@ public: // dynamic methods .....
     NDArrayPtr<bool> operator >= (const RType& rhs) const {
         auto _data = get()->_data;
         auto _shape = get()->_shape;
-        NDArrayPtr<bool> ret = NDArrayPtr<bool>(new NDArrayBool(_shape));
+        auto p = new NDArrayBool(_shape);
+        if (p == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        NDArrayPtr<bool> ret = NDArrayPtr<bool>(p);
         bool * ptr_ret = ret.data();
         for (auto i = 0; i < ret.elemCount(); i++) {
             if (_data[i] >= rhs) ptr_ret[i] = true;
@@ -882,7 +1031,12 @@ public: // dynamic methods .....
     NDArrayPtr<bool> operator >= (const float& rhs) const {
         auto _data = get()->_data;
         auto _shape = get()->_shape;
-        NDArrayPtr<bool> ret = NDArrayPtr<bool>(new NDArrayBool(_shape));
+        auto p = new NDArrayBool(_shape);
+        if (p == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        NDArrayPtr<bool> ret = NDArrayPtr<bool>(p);
         bool * ptr_ret = ret.data();
         for (auto i = 0; i < ret.elemCount(); i++) {
             if (_data[i] >= rhs) ptr_ret[i] = true;
@@ -895,7 +1049,12 @@ public: // dynamic methods .....
         auto _shape = get()->_shape;
         auto _strides = get()->_strides;
         if (_shape == __rhs.shape()) {
-            NDArrayPtr<bool> ret = NDArrayPtr<bool>(new NDArrayBool(_shape));
+            auto p = new NDArray<DType>(_shape);
+            if (p == nullptr) {
+                throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+                return nullptr;
+            }
+            NDArrayPtr<DType> ret = NDArrayPtr<DType>(p);
             DType * ptr_ret = ret.data();
             DType * ptr_lhs = _data;
             DType * ptr_rhs = __rhs.data();
@@ -909,7 +1068,12 @@ public: // dynamic methods .....
             std::vector<int> dims1 = __rhs.shape();
             std::vector<int> dims2 = _get_broadcast_op_shape(_shape, dims1);
 
-            NDArrayPtr<bool> ret = NDArrayPtr<bool>(new NDArray<bool>(dims2));
+            auto p = new NDArray<DType>(dims2);
+            if (p == nullptr) {
+                throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+                return nullptr;
+            }
+            NDArrayPtr<DType> ret = NDArrayPtr<DType>(p);
 
             int msize = dims2.size();
 
@@ -980,7 +1144,12 @@ public: // dynamic methods .....
         auto _shape = get()->_shape;
         auto _strides = get()->_strides;
         if (_shape == __rhs.shape()) {
-            NDArrayPtr<bool> ret = NDArrayPtr<bool>(new NDArrayBool(_shape));
+            auto p = new NDArrayBool(_shape);
+            if (p == nullptr) {
+                throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+                return nullptr;
+            }
+            NDArrayPtr<bool> ret = NDArrayPtr<bool>(p);
             DType * ptr_ret = ret.data();
             DType * ptr_lhs = _data;
             DType * ptr_rhs = __rhs.data();
@@ -994,7 +1163,12 @@ public: // dynamic methods .....
             std::vector<int> dims1 = __rhs.shape();
             std::vector<int> dims2 = _get_broadcast_op_shape(_shape, dims1);
 
-            NDArrayPtr<bool> ret = NDArrayPtr<bool>(new NDArray<bool>(dims2));
+            auto p = new NDArray<bool>(dims2);
+            if (p == nullptr) {
+                throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+                return nullptr;
+            }
+            NDArrayPtr<bool> ret = NDArrayPtr<bool>(p);
 
             int msize = dims2.size();
 
@@ -1152,7 +1326,12 @@ public: // dynamic methods .....
             for (auto i = 0; i < _shape[0]; i++) {
                 sum += (_data[i] * __other->_data[i]);
             }
-            auto ptr = NDArrayPtr(new NDArray<DType>({1}, sum));
+            auto p = new NDArray<DType>({ 1 }, sum);
+            if (p == nullptr) {
+                throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+                return nullptr;
+            }
+            auto ptr = NDArrayPtr(p);
             return ptr;
         }
         else if (_shape.size() == 2 && __other.shape().size() == 2) {
@@ -1164,7 +1343,12 @@ public: // dynamic methods .....
             int K = _shape[1];
             int N = B.shape()[1];
 
-            NDArrayPtr<DType> C = NDArrayPtr<DType>(new NDArray<DType>({M, N}));
+            auto c = new NDArray<DType>({ M, N });
+            if (c == nullptr) {
+                throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+                return nullptr;
+            }
+            NDArrayPtr<DType> C = NDArrayPtr<DType>(c);
             auto ptr_C = C.data();
             auto ptr_A = _data;
             auto ptr_B = B.data();
@@ -1197,8 +1381,19 @@ public: // dynamic methods .....
             shape_am.push_back(_shape[i]);
         }
 
-        auto arr_max_val = NDArrayPtr<DType>(new NDArray<DType>(shape_am, min()));
-        auto arr_max_idx = NDArrayPtr<int  >(new NDArray<int  >(shape_am));
+        auto pmaxv = new NDArray<DType>(shape_am, min());
+        if (pmaxv == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto arr_max_val = NDArrayPtr<DType>(pmaxv);
+
+        auto pmaxi = new NDArray<int>(shape_am);
+        if (pmaxi == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto arr_max_idx = NDArrayPtr<int>(pmaxi);
 
         for (auto i = 0; i < elemCount(); i++) {
 
@@ -1238,8 +1433,19 @@ public: // dynamic methods .....
             shape_am.push_back(_shape[i]);
         }
 
-        auto arr_max_val = NDArrayPtr<DType>(new NDArray<DType>(shape_am, min()));
-        auto arr_max_idx = NDArrayPtr<int  >(new NDArray<int  >(shape_am));
+        auto pmaxv = new NDArray<DType>(shape_am, min());
+        if (pmaxv == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto arr_max_val = NDArrayPtr<DType>(pmaxv);
+        
+        auto pmaxi = new NDArray<int>(shape_am);
+        if (pmaxi == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto arr_max_idx = NDArrayPtr<int>(pmaxi);
 
         for (auto i = 0; i < elemCount(); i++) {
 
@@ -1276,8 +1482,19 @@ public: // dynamic methods .....
             shape_am.push_back(_shape[i]);
         }
 
-        auto arr_min_val = NDArrayPtr<DType>(new NDArray<DType>(shape_am, max()));
-        auto arr_min_idx = NDArrayPtr<int  >(new NDArray<int  >(shape_am));
+        auto pminv = new NDArray<DType>(shape_am, max());
+        if (pminv == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto arr_min_val = NDArrayPtr<DType>(pminv);
+
+        auto pmini = new NDArray<int>(shape_am);
+        if (pmini == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto arr_min_idx = NDArrayPtr<int  >(pmini);
 
         for (auto i = 0; i < elemCount(); i++) {
 
@@ -1314,8 +1531,19 @@ public: // dynamic methods .....
             shape_am.push_back(_shape[i]);
         }
 
-        auto arr_min_val = NDArrayPtr<DType>(new NDArray<DType>(shape_am, max()));
-        auto arr_min_idx = NDArrayPtr<int  >(new NDArray<int  >(shape_am));
+        auto pminv = new NDArray<DType>(shape_am, max());
+        if (pminv == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto arr_min_val = NDArrayPtr<DType>(pminv);
+
+        auto pmini = new NDArray<int>(shape_am);
+        if (pmini == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto arr_min_idx = NDArrayPtr<int>(pmini);
 
         for (auto i = 0; i < elemCount(); i++) {
 
@@ -1348,8 +1576,14 @@ public: // dynamic methods .....
         auto _shape = get()->_shape;
         if (_shape.size() != 2) throw std::runtime_error("Only 2D array (Matrix2D) can use T() method.");
         auto _data = get()->_data;
+        if (_data == nullptr) throw std::runtime_error("Empty source 2D array.");
         auto _strides = get()->_strides;
-        auto ret = NDArrayPtr<DType>(new NDArray<DType>({_shape[1], _shape[0]}));
+        auto p = new NDArray<DType>({ _shape[1], _shape[0] });
+        if (p == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto ret = NDArrayPtr<DType>(p);
         auto ptr_ret = ret.data();
         for (auto i = 0; i < _shape[0]; i++) {
             for (auto j = 0; j < _shape[1]; j++) {
@@ -1385,7 +1619,12 @@ public: // dynamic methods .....
             new_shape[neg_dim] = elemCnt / k;
         }
         // ------------------------------------------------------------------
-        auto ret = NDArrayPtr<DType>(new NDArray<DType>(new_shape));
+        auto p = new NDArray<DType>(new_shape);
+        if (p == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto ret = NDArrayPtr<DType>(p);
         assert(ret.elemCount() == elemCount());
         memcpy(ret.data(), _data, bytesCount());
         return ret;
@@ -1396,7 +1635,12 @@ public: // dynamic methods .....
         auto _data = get()->_data;
         auto _shape = get()->_shape;
         auto _strides = get()->_strides;
-        auto ret = NDArrayPtr<RType>(new NDArray<RType>(_shape));
+        auto p = new NDArray<RType>(_shape);
+        if (p == nullptr) {
+            throw std::runtime_error("[numcxx] Failed to new a NDArray pointer.");
+            return nullptr;
+        }
+        auto ret = NDArrayPtr<RType>(p);
         auto ptr_ret = ret.data();
         for (auto i = 0; i < elemCount(); i++) {
             ptr_ret[i] = _data[i];

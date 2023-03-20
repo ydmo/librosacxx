@@ -20,6 +20,7 @@ inline size_t alignUp(const size_t& __size, const size_t& __align) {
 inline void * alignedMalloc(size_t alignment, size_t size) {
     size_t offset = alignment - 1 + sizeof(void*);
     void* originalP = malloc(size + offset);
+    if (originalP == NULL) return NULL; 
     size_t originalLocation = reinterpret_cast<size_t>(originalP);
     size_t realLocation = (originalLocation + offset) & ~(alignment - 1);
     void* realP = reinterpret_cast<void*>(realLocation);
@@ -31,6 +32,7 @@ inline void * alignedMalloc(size_t alignment, size_t size) {
 inline void * alignedCalloc(size_t alignment, size_t size) {
     size_t offset = alignment - 1 + sizeof(void*);
     void* originalP = calloc(size + offset, 1);
+    if (originalP == NULL) return NULL; 
     size_t originalLocation = reinterpret_cast<size_t>(originalP);
     size_t realLocation = (originalLocation + offset) & ~(alignment - 1);
     void* realP = reinterpret_cast<void*>(realLocation);
